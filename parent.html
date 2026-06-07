@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduCore – Parent Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --primary:#2d2d2d;--primary-pale:#f0f0f0;
+  --accent:#f0a500;--accent-pale:#fff8e7;
+  --bg:#f5f5f5;--card:#fff;
+  --green:#1a7a4a;--green-pale:#d4efdf;
+  --red:#b03a2e;--red-pale:#fadbd8;
+  --orange:#d35400;--orange-pale:#fdebd0;
+  --blue:#1b4f72;--blue-pale:#d6eaf8;
+  --text:#1a1a1a;--text-dim:#6b7280;
+  --border:#e5e7eb;
+  --shadow:0 1px 8px rgba(0,0,0,0.07);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.14);
+  --r:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;background:linear-gradient(145deg,#1a1a1a,#2d2d2d);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:20px;}
+#loginScreen.hidden{display:none;}
+.login-card{background:#fff;border-radius:22px;padding:36px 32px;width:360px;max-width:100%;box-shadow:0 32px 80px rgba(0,0,0,0.4);animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes popIn{from{opacity:0;transform:scale(.9) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.login-brand{text-align:center;margin-bottom:22px;}
+.login-logo{width:64px;height:64px;background:var(--primary);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:1.8rem;overflow:hidden;}
+.login-logo img{width:100%;height:100%;object-fit:cover;}
+.login-brand h1{font-family:'Fraunces',serif;font-size:1.35rem;color:var(--primary);}
+.login-brand .motto{font-size:0.71rem;color:var(--text-dim);margin-top:2px;font-style:italic;}
+.login-badge{display:inline-block;background:var(--primary);color:#fff;font-size:0.67rem;font-weight:700;padding:4px 12px;border-radius:20px;margin-top:7px;text-transform:uppercase;letter-spacing:0.06em;}
+.afield{margin-bottom:13px;}
+.afield label{display:block;font-size:0.67rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim);margin-bottom:5px;}
+.afield input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:0.88rem;color:var(--text);outline:none;transition:border-color .2s;}
+.afield input:focus{border-color:var(--primary);background:#fff;}
+.hint{font-size:0.68rem;color:var(--text-dim);margin-top:4px;}
+.login-err{background:var(--red-pale);color:var(--red);border-radius:9px;padding:8px 14px;font-size:0.77rem;font-weight:600;margin-bottom:10px;display:none;}
+.login-err.show{display:block;animation:shake .3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.login-btn{width:100%;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:4px;}
+.login-btn:hover{opacity:.88;}
+.login-help{text-align:center;margin-top:14px;font-size:0.73rem;color:var(--text-dim);}
+.login-help a{color:var(--primary);font-weight:700;text-decoration:none;}
+.login-footer{font-size:0.68rem;color:rgba(255,255,255,0.38);text-align:center;}
+.login-footer strong{color:rgba(255,255,255,0.65);}
+
+/* PORTAL */
+#portal{display:none;min-height:100vh;flex-direction:column;}
+#portal.visible{display:flex;}
+
+/* HEADER */
+.pheader{background:var(--primary);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;}
+.pheader-left{display:flex;align-items:center;gap:10px;}
+.pheader-icon{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;overflow:hidden;flex-shrink:0;}
+.pheader-icon img{width:100%;height:100%;object-fit:cover;border-radius:10px;}
+.pheader-school{font-family:'Fraunces',serif;font-size:0.95rem;color:#fff;}
+.pheader-motto{font-size:0.62rem;color:rgba(255,255,255,0.5);font-style:italic;}
+.pheader-right{display:flex;align-items:center;gap:8px;}
+.signout-btn{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 12px;color:rgba(255,255,255,0.7);font-family:'DM Sans',sans-serif;font-size:0.73rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.signout-btn:hover{background:var(--red-pale);color:var(--red);border-color:transparent;}
+
+/* CONTENT */
+.pcontent{flex:1;padding:20px;max-width:600px;margin:0 auto;width:100%;}
+
+/* STUDENT CARD */
+.student-card{background:var(--card);border-radius:var(--r);padding:20px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:16px;}
+.student-top{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.student-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;color:#fff;flex-shrink:0;}
+.student-name{font-family:'Fraunces',serif;font-size:1.05rem;}
+.student-sub{font-size:0.73rem;color:var(--text-dim);margin-top:2px;}
+.student-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+.sbdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:700;}
+.sbdg-g{background:var(--green-pale);color:var(--green);}
+.sbdg-r{background:var(--red-pale);color:var(--red);}
+.sbdg-o{background:var(--orange-pale);color:var(--orange);}
+.sbdg-dk{background:var(--primary-pale);color:var(--primary);}
+
+/* FEE SECTION */
+.fee-section{margin-bottom:16px;}
+.fee-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.fee-title{font-family:'Fraunces',serif;font-size:0.88rem;color:var(--primary);}
+.fee-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.fee-item{background:var(--bg);border-radius:10px;padding:11px 13px;}
+.fee-lbl{font-size:0.65rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+.fee-val{font-family:'Fraunces',serif;font-size:1rem;}
+.pbar-wrap{background:var(--bg);border-radius:20px;height:8px;overflow:hidden;margin-bottom:6px;}
+.pbar{height:100%;border-radius:20px;transition:width .5s ease;}
+.pbar-label{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-dim);font-weight:600;}
+
+/* RESULTS SECTION */
+.results-section{background:var(--card);border-radius:var(--r);padding:18px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:16px;}
+.results-title{font-family:'Fraunces',serif;font-size:0.88rem;color:var(--primary);margin-bottom:12px;}
+.results-locked{background:var(--primary-pale);border-radius:10px;padding:14px;text-align:center;font-size:0.78rem;color:var(--text-dim);}
+.grades-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.grade-item{background:var(--bg);border-radius:10px;padding:11px;text-align:center;}
+.grade-sub{font-size:0.67rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+.grade-score{font-family:'Fraunces',serif;font-size:1.2rem;color:var(--primary);margin-bottom:2px;}
+.grade-letter{display:inline-block;padding:2px 9px;border-radius:20px;font-size:0.68rem;font-weight:700;}
+.gA{background:var(--green-pale);color:var(--green);}
+.gB{background:var(--blue-pale);color:var(--blue);}
+.gC{background:var(--orange-pale);color:var(--orange);}
+.gD{background:var(--red-pale);color:var(--red);}
+
+/* CONTACT SECTION */
+.contact-section{background:var(--card);border-radius:var(--r);padding:18px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:16px;}
+.contact-title{font-family:'Fraunces',serif;font-size:0.88rem;color:var(--primary);margin-bottom:12px;}
+.contact-btns{display:flex;gap:9px;}
+.contact-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;border:none;transition:all .2s;text-decoration:none;}
+.cbtn-call{background:var(--primary);color:#fff;}.cbtn-call:hover{opacity:.88;}
+.cbtn-wa{background:var(--green);color:#fff;}.cbtn-wa:hover{opacity:.85;}
+.cbtn-sms{background:var(--primary-pale);color:var(--primary);border:1.5px solid var(--border);}.cbtn-sms:hover{border-color:var(--primary);}
+
+/* NOTICE */
+.notice-card{border-radius:var(--r);padding:14px 16px;margin-bottom:16px;font-size:0.78rem;font-weight:600;line-height:1.5;}
+.notice-green{background:var(--green-pale);color:var(--green);border:1px solid var(--green-pale);}
+.notice-red{background:var(--red-pale);color:var(--red);border:1px solid var(--red-pale);}
+.notice-orange{background:var(--orange-pale);color:var(--orange);border:1px solid var(--orange-pale);}
+
+/* FOOTER */
+.pfooter{background:var(--card);border-top:1px solid var(--border);padding:14px 20px;font-size:0.7rem;color:var(--text-dim);text-align:center;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo" id="loginLogo">🏫</div>
+      <h1 id="loginSchoolName">EduCore</h1>
+      <div class="motto" id="loginMotto">School Management System</div>
+      <span class="login-badge">Parent Portal</span>
+    </div>
+    <div class="afield">
+      <label>Student ID</label>
+      <input type="text" id="lId" placeholder="e.g. STU-001" autocomplete="off"/>
+      <div class="hint">Enter your child's student ID</div>
+    </div>
+    <div class="afield">
+      <label>PIN</label>
+      <input type="number" id="lPin" placeholder="Enter 4-digit PIN" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div class="hint">PIN provided by the school</div>
+    </div>
+    <div class="login-err" id="lErr">❌ Incorrect Student ID or PIN.</div>
+    <button class="login-btn" onclick="doLogin()">View My Child's Info</button>
+    <div class="login-help">
+      Forgot PIN? <a id="helpLink" href="#">Contact School</a>
+    </div>
+  </div>
+  <div class="login-footer">Powered by <strong>Nexlora Digital Systems</strong> · +256751658855</div>
+</div>
+
+<!-- PORTAL -->
+<div id="portal">
+  <div class="pheader">
+    <div class="pheader-left">
+      <div class="pheader-icon" id="portalIcon">🏫</div>
+      <div>
+        <div class="pheader-school" id="portalSchool">School Name</div>
+        <div class="pheader-motto" id="portalMotto"></div>
+      </div>
+    </div>
+    <div class="pheader-right">
+      <button class="signout-btn" onclick="doSignout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="pcontent">
+
+    <!-- NOTICE -->
+    <div id="noticeCard" class="notice-card" style="display:none"></div>
+
+    <!-- STUDENT CARD -->
+    <div class="student-card">
+      <div class="student-top">
+        <div class="student-av" id="stuAv" style="background:#2d2d2d">ST</div>
+        <div>
+          <div class="student-name" id="stuName">Student Name</div>
+          <div class="student-sub" id="stuSub">Class · ID</div>
+          <div class="student-badges" id="stuBadges"></div>
+        </div>
+      </div>
+
+      <!-- FEE INFO -->
+      <div class="fee-section">
+        <div class="fee-header">
+          <span class="fee-title">Fee Statement — Term <span id="termNum">—</span></span>
+        </div>
+        <div class="fee-row">
+          <div class="fee-item">
+            <div class="fee-lbl">Term Fee</div>
+            <div class="fee-val" id="feeTotal">—</div>
+          </div>
+          <div class="fee-item">
+            <div class="fee-lbl">Amount Paid</div>
+            <div class="fee-val" id="feePaid" style="color:var(--green)">—</div>
+          </div>
+          <div class="fee-item">
+            <div class="fee-lbl">Balance</div>
+            <div class="fee-val" id="feeBal">—</div>
+          </div>
+        </div>
+        <div class="pbar-wrap">
+          <div class="pbar" id="feeBar" style="width:0%"></div>
+        </div>
+        <div class="pbar-label">
+          <span>0%</span>
+          <span id="feePercent">0% cleared</span>
+          <span>100%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results-section">
+      <div class="results-title">📚 Academic Results</div>
+      <div id="resultsContent"></div>
+    </div>
+
+    <!-- CONTACT SCHOOL -->
+    <div class="contact-section">
+      <div class="contact-title">📞 Contact School</div>
+      <div class="contact-btns">
+        <a class="contact-btn cbtn-call" id="callBtn" href="#">📞 Call</a>
+        <a class="contact-btn cbtn-wa" id="waBtn" href="#" target="_blank">💬 WhatsApp</a>
+        <a class="contact-btn cbtn-sms" id="smsBtn" href="#">📱 SMS</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="pfooter">
+    EduCore by <strong>Nexlora Digital Systems</strong> · +256751658855
+  </div>
+</div>
+
+<script>
+let CFG={};
+let currentStu=null;
+
+async function loadConfig(){
+  try{const r=await fetch('./config.json?t='+Date.now());CFG=await r.json();}
+  catch(e){CFG={school:"Your School Name",motto:"Excellence in Education",badge:"",primaryColor:"#2d2d2d",accentColor:"#f0a500",phone:"07XXXXXXXX",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",package:"starter",trialStart:"2025-06-05",trialEnd:"2025-06-19",termEnd:"2025-09-30",term:2,nexloraPhone:"+256751658855"};}
+  applyBranding();
+}
+
+function isPro(){
+  const now=new Date(),te=new Date(CFG.trialEnd||'2000-01-01'),ts=new Date(CFG.trialStart||'2000-01-01');
+  if(now>=ts&&now<=te)return true;
+  return['pro','premium'].includes(CFG.package);
+}
+
+function applyBranding(){
+  document.documentElement.style.setProperty('--primary',CFG.primaryColor||'#2d2d2d');
+  document.documentElement.style.setProperty('--accent',CFG.accentColor||'#f0a500');
+  const school=CFG.school||'School';
+  const motto=CFG.motto||'';
+  document.getElementById('loginSchoolName').textContent=school;
+  document.getElementById('loginMotto').textContent=motto;
+  document.getElementById('portalSchool').textContent=school;
+  document.getElementById('portalMotto').textContent=motto;
+  if(CFG.badge){
+    document.getElementById('loginLogo').innerHTML=`<img src="${CFG.badge}" alt="logo"/>`;
+    document.getElementById('portalIcon').innerHTML=`<img src="${CFG.badge}" alt="logo"/>`;
+  }
+  // Contact links
+  const ph=CFG.phone||'07XXXXXXXX';
+  const nexlora=CFG.nexloraPhone||'+256751658855';
+  document.getElementById('callBtn').href='tel:'+ph;
+  document.getElementById('waBtn').href='https://wa.me/256'+ph.replace(/^0/,'');
+  document.getElementById('smsBtn').href='sms:'+ph;
+  document.getElementById('helpLink').href='tel:'+ph;
+  document.title='EduCore – '+school+' Parent Portal';
+}
+
+async function fetchStudents(){
+  const r=await fetch(`https://docs.google.com/spreadsheets/d/${CFG.sheetId}/gviz/tq?tqx=out:json&sheet=students`);
+  const t=await r.text();
+  const j=JSON.parse(t.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+  return j.table.rows.map(r=>r.c.map(c=>c?(c.v!==null?c.v:''):''));
+}
+
+async function doLogin(){
+  const id=document.getElementById('lId').value.trim().toUpperCase();
+  const pin=document.getElementById('lPin').value.trim();
+  const err=document.getElementById('lErr');
+  if(!id||!pin){err.textContent='❌ Please enter Student ID and PIN.';err.classList.add('show');return;}
+  // Check if Pro package
+  if(!isPro()){
+    err.textContent='❌ Parent Portal is available from Pro package. Contact the school.';
+    err.classList.add('show');return;
+  }
+  try{
+    const rows=await fetchStudents();
+    const students=rows.filter(r=>r[1]&&r[1]!=='NAME'&&r[1]!=='Name').map(r=>({
+      id:String(r[0]||'').toUpperCase(),name:r[1]||'',cls:r[2]||'',parent:r[3]||'',
+      phone:String(r[4]||''),fee:parseFloat(r[5])||0,paid:parseFloat(r[6])||0,
+      eng:parseFloat(r[7])||0,math:parseFloat(r[8])||0,
+      sci:parseFloat(r[9])||0,sst:parseFloat(r[10])||0,
+      pin:String(r[11]||''),bal:(parseFloat(r[5])||0)-(parseFloat(r[6])||0),
+    }));
+    const found=students.find(s=>s.id===id&&s.pin===pin);
+    if(!found){err.textContent='❌ Incorrect Student ID or PIN. Contact the school for help.';err.classList.add('show');return;}
+    err.classList.remove('show');
+    currentStu=found;
+    showPortal(found);
+  }catch(e){
+    err.textContent='❌ Could not connect. Please check your internet and try again.';
+    err.classList.add('show');
+  }
+}
+
+function showPortal(s){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('portal').classList.add('visible');
+  // Avatar
+  const COLS=['#2d2d2d','#117a65','#6e2f8a','#b7770d','#c0392b','#2e86c1','#1e8449'];
+  const col=COLS[s.name.charCodeAt(0)%COLS.length];
+  const ini=s.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('stuAv').style.background=col;
+  document.getElementById('stuAv').textContent=ini;
+  document.getElementById('stuName').textContent=s.name;
+  document.getElementById('stuSub').textContent=s.cls+' · '+s.id;
+  document.getElementById('termNum').textContent=CFG.term||2;
+  // Badges
+  const feeStatus=s.bal===0?'Paid':s.bal<100000?'Partial':'Owing';
+  const feeClass=s.bal===0?'sbdg-g':s.bal<100000?'sbdg-o':'sbdg-r';
+  document.getElementById('stuBadges').innerHTML=`
+    <span class="sbdg ${feeClass}">${feeStatus}</span>
+    <span class="sbdg sbdg-dk">${s.cls}</span>`;
+  // Fee info
+  const pct=s.fee>0?Math.round((s.paid/s.fee)*100):0;
+  document.getElementById('feeTotal').textContent='UGX '+fm(s.fee);
+  document.getElementById('feePaid').textContent='UGX '+fm(s.paid);
+  document.getElementById('feeBal').textContent='UGX '+fm(s.bal);
+  document.getElementById('feeBal').style.color=s.bal===0?'var(--green)':'var(--red)';
+  document.getElementById('feeBar').style.width=pct+'%';
+  document.getElementById('feeBar').style.background=pct>=100?'var(--green)':pct>=50?'var(--orange)':'var(--red)';
+  document.getElementById('feePercent').textContent=pct+'% cleared';
+  // Notice
+  const notice=document.getElementById('noticeCard');
+  if(s.bal===0){
+    notice.className='notice-card notice-green';
+    notice.style.display='block';
+    notice.textContent='✅ All fees cleared for this term. Thank you!';
+  }else if(s.bal>0&&s.bal<s.fee){
+    notice.className='notice-card notice-orange';
+    notice.style.display='block';
+    notice.textContent=`⚠️ UGX ${fm(s.bal)} balance remaining. Please clear as soon as possible.`;
+  }else{
+    notice.className='notice-card notice-red';
+    notice.style.display='block';
+    notice.textContent=`❗ Full balance of UGX ${fm(s.bal)} is outstanding. Please contact the school.`;
+  }
+  // Results
+  const rc=document.getElementById('resultsContent');
+  if(s.bal>0){
+    rc.innerHTML=`<div class="results-locked">📚 Academic results are available after clearing all fees.<br><br>Current balance: <strong style="color:var(--red)">UGX ${fm(s.bal)}</strong></div>`;
+  }else{
+    const gl=v=>v>=80?'A':v>=65?'B':v>=50?'C':'D';
+    const gc=g=>({A:'gA',B:'gB',C:'gC',D:'gD'}[g]);
+    const avg=Math.round((s.eng+s.math+s.sci+s.sst)/4);
+    rc.innerHTML=`
+      <div class="grades-grid">
+        ${[{n:'English',v:s.eng},{n:'Math',v:s.math},{n:'Science',v:s.sci},{n:'SST',v:s.sst}].map(g=>`
+        <div class="grade-item">
+          <div class="grade-sub">${g.n}</div>
+          <div class="grade-score">${g.v||'—'}</div>
+          <span class="grade-letter ${gc(gl(g.v))}">${g.v?gl(g.v):'—'}</span>
+        </div>`).join('')}
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.77rem;color:var(--text-dim);font-weight:600">Overall Average</span>
+        <span style="font-family:'Fraunces',serif;font-size:1.1rem;color:${avg>=50?'var(--green)':'var(--red)'}">${avg}% — Grade ${gl(avg)}</span>
+      </div>`;
+  }
+}
+
+function doSignout(){
+  currentStu=null;
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('portal').classList.remove('visible');
+  document.getElementById('lId').value='';
+  document.getElementById('lPin').value='';
+  document.getElementById('lErr').classList.remove('show');
+}
+
+function fm(n){return Number(n).toLocaleString();}
+
+loadConfig();
+</script>
+</body>
+</html>

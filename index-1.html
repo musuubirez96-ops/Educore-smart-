@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduCore – School Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --primary:#2d2d2d;--primary-pale:#f0f0f0;
+  --accent:#f0a500;--accent-pale:#fff8e7;
+  --bg:#f5f5f5;--card:#fff;
+  --green:#1a7a4a;--green-pale:#d4efdf;
+  --text:#1a1a1a;--text-dim:#6b7280;
+  --border:#e5e7eb;
+  --shadow:0 1px 8px rgba(0,0,0,0.07);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.14);
+  --r:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+.hero{background:linear-gradient(145deg,#1a1a1a 0%,#2d2d2d 60%,#1a1a1a 100%);padding:40px 20px 50px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,rgba(240,165,0,0.08),transparent 60%);pointer-events:none;}
+.hero-logo{width:72px;height:72px;background:var(--accent);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:2rem;overflow:hidden;box-shadow:0 8px 24px rgba(240,165,0,0.3);}
+.hero-logo img{width:100%;height:100%;object-fit:cover;border-radius:20px;}
+.hero h1{font-family:'Fraunces',serif;font-size:1.7rem;color:#fff;margin-bottom:6px;}
+.hero h1 span{color:var(--accent);}
+.hero-school{font-size:0.88rem;color:rgba(255,255,255,0.6);margin-bottom:4px;}
+.hero-motto{font-size:0.75rem;color:rgba(255,255,255,0.4);font-style:italic;}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:5px 14px;font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.55);margin-top:14px;}
+.hero-badge span{width:7px;height:7px;border-radius:50%;background:#3bff8f;box-shadow:0 0 6px #3bff8f;display:inline-block;}
+.content{padding:24px 20px;max-width:560px;margin:0 auto;}
+.section-label{font-size:0.65rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;padding-left:2px;}
+.portals{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px;}
+.portal-card{background:var(--card);border-radius:var(--r);padding:20px 16px;border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;transition:all .22s;text-decoration:none;display:flex;flex-direction:column;align-items:flex-start;position:relative;overflow:hidden;}
+.portal-card::after{content:'→';position:absolute;bottom:14px;right:16px;font-size:1rem;color:var(--border);transition:all .22s;}
+.portal-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--primary);}
+.portal-card:hover::after{color:var(--primary);}
+.portal-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:12px;flex-shrink:0;}
+.portal-name{font-family:'Fraunces',serif;font-size:0.95rem;color:var(--primary);margin-bottom:3px;}
+.portal-desc{font-size:0.71rem;color:var(--text-dim);line-height:1.4;}
+.portal-tag{display:inline-block;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:20px;margin-top:8px;text-transform:uppercase;letter-spacing:0.05em;}
+.tag-all{background:var(--green-pale);color:var(--green);}
+.tag-pro{background:#d6eaf8;color:#1b4f72;}
+.info-card{background:var(--card);border-radius:var(--r);padding:18px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:14px;}
+.info-title{font-family:'Fraunces',serif;font-size:0.88rem;color:var(--primary);margin-bottom:12px;}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:0.78rem;}
+.info-row:last-child{border-bottom:none;}
+.info-lbl{color:var(--text-dim);font-weight:500;}
+.info-val{font-weight:700;color:var(--primary);}
+.support-card{background:var(--primary);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.support-title{font-family:'Fraunces',serif;color:#fff;font-size:0.88rem;margin-bottom:12px;}
+.support-btns{display:flex;gap:8px;}
+.support-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.75rem;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:all .2s;}
+.sbtn-call{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15);}.sbtn-call:hover{background:rgba(255,255,255,0.2);}
+.sbtn-wa{background:#1a7a4a;color:#fff;}.sbtn-wa:hover{opacity:.85;}
+.powered{text-align:center;padding:16px;font-size:0.7rem;color:var(--text-dim);}
+.powered strong{color:var(--primary);}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-logo" id="heroLogo">🏫</div>
+  <h1>Edu<span>Core</span></h1>
+  <div class="hero-school" id="heroSchool">Your School Name</div>
+  <div class="hero-motto" id="heroMotto">Excellence in Education</div>
+  <div class="hero-badge"><span></span> System Active</div>
+</div>
+
+<div class="content">
+
+  <div class="section-label">Select Your Portal</div>
+  <div class="portals">
+    <a class="portal-card" href="admin.html">
+      <div class="portal-icon" style="background:#f0f0f0">👨‍💼</div>
+      <div class="portal-name">Admin</div>
+      <div class="portal-desc">Students, workers and communications</div>
+      <span class="portal-tag tag-all">All Packages</span>
+    </a>
+    <a class="portal-card" href="accountant.html">
+      <div class="portal-icon" style="background:#d4efdf">💰</div>
+      <div class="portal-name">Accountant</div>
+      <div class="portal-desc">Fee payments, expenses and payroll</div>
+      <span class="portal-tag tag-all">All Packages</span>
+    </a>
+    <a class="portal-card" href="principal.html">
+      <div class="portal-icon" style="background:#d6eaf8">🎓</div>
+      <div class="portal-name">Principal</div>
+      <div class="portal-desc">Analytics, approvals and overview</div>
+      <span class="portal-tag tag-all">All Packages</span>
+    </a>
+    <a class="portal-card" href="parent.html">
+      <div class="portal-icon" style="background:#fff8e7">👨‍👩‍👧</div>
+      <div class="portal-name">Parents</div>
+      <div class="portal-desc">Fees, results and contact school</div>
+      <span class="portal-tag tag-pro">Pro & Above</span>
+    </a>
+  </div>
+
+  <div class="section-label">System Info</div>
+  <div class="info-card">
+    <div class="info-title">📋 Current Status</div>
+    <div class="info-row"><span class="info-lbl">School</span><span class="info-val" id="infoSchool">—</span></div>
+    <div class="info-row"><span class="info-lbl">Package</span><span class="info-val" id="infoPkg">—</span></div>
+    <div class="info-row"><span class="info-lbl">Current Term</span><span class="info-val" id="infoTerm">—</span></div>
+    <div class="info-row"><span class="info-lbl">Update Due</span><span class="info-val" id="infoExpiry">—</span></div>
+    <div class="info-row"><span class="info-lbl">Status</span><span class="info-val" id="infoStatus">—</span></div>
+  </div>
+
+  <div class="section-label">Support</div>
+  <div class="support-card">
+    <div class="support-title">Need help? Contact Nexlora Digital Systems</div>
+    <div class="support-btns">
+      <a class="support-btn sbtn-call" id="supportCall" href="tel:+256751658855">📞 Call Us</a>
+      <a class="support-btn sbtn-wa" id="supportWA" href="https://wa.me/256751658855" target="_blank">💬 WhatsApp</a>
+    </div>
+  </div>
+
+</div>
+
+<div class="powered">Powered by <strong>Nexlora Digital Systems</strong> · +256751658855</div>
+
+<script>
+async function loadConfig(){
+  let CFG={};
+  try{const r=await fetch('./config.json?t='+Date.now());CFG=await r.json();}
+  catch(e){CFG={school:"Your School Name",motto:"Excellence in Education",badge:"",primaryColor:"#2d2d2d",accentColor:"#f0a500",package:"starter",trialStart:"2025-06-05",trialEnd:"2025-06-19",termEnd:"2025-09-30",term:2,nexloraPhone:"+256751658855"};}
+  document.documentElement.style.setProperty('--primary',CFG.primaryColor||'#2d2d2d');
+  document.documentElement.style.setProperty('--accent',CFG.accentColor||'#f0a500');
+  const school=CFG.school||'Your School Name';
+  document.getElementById('heroSchool').textContent=school;
+  document.getElementById('heroMotto').textContent=CFG.motto||'';
+  document.title='EduCore – '+school;
+  if(CFG.badge)document.getElementById('heroLogo').innerHTML=`<img src="${CFG.badge}" alt="logo"/>`;
+  const now=new Date();
+  const trialEnd=new Date(CFG.trialEnd||'2000-01-01');
+  const trialStart=new Date(CFG.trialStart||'2000-01-01');
+  const isTrial=now>=trialStart&&now<=trialEnd;
+  const termEnd=new Date(CFG.termEnd||'2000-01-01');
+  const isExpired=!isTrial&&now>termEnd;
+  const daysLeft=isTrial?Math.ceil((trialEnd-now)/(1000*60*60*24)):Math.ceil((termEnd-now)/(1000*60*60*24));
+  document.getElementById('infoSchool').textContent=school;
+  document.getElementById('infoPkg').textContent=isTrial?'Trial (Premium access)':(CFG.package||'starter').toUpperCase();
+  document.getElementById('infoTerm').textContent='Term '+(CFG.term||2);
+  document.getElementById('infoExpiry').textContent=isTrial?CFG.trialEnd:CFG.termEnd;
+  const statusEl=document.getElementById('infoStatus');
+  if(isTrial){statusEl.textContent='✅ Trial Active ('+daysLeft+' days left)';statusEl.style.color='var(--green)';}
+  else if(isExpired){statusEl.textContent='⚠️ Update Required';statusEl.style.color='var(--red)';}
+  else{statusEl.textContent='✅ Active ('+daysLeft+' days left)';statusEl.style.color='var(--green)';}
+  const ph=CFG.nexloraPhone||'+256751658855';
+  document.getElementById('supportCall').href='tel:'+ph;
+  document.getElementById('supportWA').href='https://wa.me/'+ph.replace('+','');
+}
+loadConfig();
+</script>
+</body>
+</html>
