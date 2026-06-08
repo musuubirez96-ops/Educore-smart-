@@ -595,7 +595,7 @@ async function loadWks(){
     wks=rows.filter(r=>r[1]&&r[1]!=='FullName').map(r=>({
       id:String(r[0]||''),name:r[1]||'',role:r[2]||'',phone:String(r[3]||''),
       cont:r[4]||'SMS',payType:r[5]||'Monthly',amt:parseFloat(r[6])||0,
-      status:r[8]||'Active',cat:r[9]||'Support Staff',termPaid:0,
+      status:String(r[8]||'Active').trim(),cat:String(r[9]||'Support Staff').trim(),termPaid:0,
     }));
     rWks();
   }catch(e){console.log('Workers error',e);}
@@ -730,7 +730,7 @@ function rExps(){
 
 function rWks(){
   const grid=document.getElementById('wGrid');
-  const active=wks.filter(w=>w.status==='Active');
+  const active=wks.filter(w=>w.status!=='Quit'&&w.status!=='Frozen');
   if(!active.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text-dim)">No active workers found.</div>';return;}
   grid.innerHTML=active.map(w=>{
     const ps=w.termPaid>=w.amt?'Paid':w.termPaid>0?'Partial':'Not Paid';
