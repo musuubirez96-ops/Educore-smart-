@@ -1120,7 +1120,7 @@ function rWks(){
         <button class="wb wqu" onclick="quitWk('${w.id}')">Quit</button>
       </div>
     </div>`).join('');
-  const inac=wks.filter(w=>w.status!=='Active');
+  const inac=wks.filter(w=>w.status==='Quit'||w.status==='Frozen');
   const tb=document.getElementById('inacBody');
   if(!inac.length){tb.innerHTML='<tr class="lr"><td colspan="6">No inactive workers.</td></tr>';return;}
   tb.innerHTML=inac.map(w=>`<tr>
