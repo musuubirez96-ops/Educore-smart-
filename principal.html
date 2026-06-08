@@ -620,9 +620,9 @@ async function loadAll(){
       status:r[8]||'Active',cat:r[9]||'Support Staff',
     }));
     rPayroll();
-    const payroll=wks.filter(w=>w.status==='Active').reduce((s,w)=>s+w.amt,0);
+    const payroll=wks.reduce((s,w)=>s+w.amt,0);
     document.getElementById('sumPayroll').textContent='UGX '+fm(payroll);
-    document.getElementById('sumWkCount').textContent=wks.filter(w=>w.status==='Active').length+' active workers';
+document.getElementById('sumWkCount').textContent=wks.length+' active workers';
     document.getElementById('ovWks').textContent=wks.filter(w=>w.status==='Active').length;
   }catch(e){console.log('Workers error',e);}
   try{
