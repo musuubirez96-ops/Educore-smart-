@@ -975,7 +975,7 @@ function updStats(){
   document.getElementById('stTotal').textContent=stu.length;
   document.getElementById('stPaid').textContent=stu.filter(s=>s.bal===0).length;
   document.getElementById('stOwing').textContent=stu.filter(s=>s.bal>0).length;
-  document.getElementById('stWks').textContent=wks.filter(w=>w.status==='Active').length;
+  document.getElementById('stWks').textContent=wks.length;
   // Export button
   document.getElementById('exportBtn').className=hasFeature('exportCSV')?'btn boutline':'btn boutline feat-lock';
   document.getElementById('exportBtn').title=hasFeature('exportCSV')?'':'🔒 Pro feature — Update to export';
@@ -1106,7 +1106,7 @@ function clearStuForm(){['nId','nName','nParent','nPhone','nFee','nPaid','nPin',
 // ══════════════════════════════════════════
 function rWks(){
   const grid=document.getElementById('wGrid');
-  const act=wks.filter(w=>w.status==='Active');
+  const act=wks.filter(w=>w.status!=='Quit'&&w.status!=='Frozen');
   if(!act.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text-dim)">No active workers.</div>';return;}
   grid.innerHTML=act.map(w=>`
     <div class="wc">
