@@ -919,7 +919,7 @@ async function loadWks(){
     wks=rows.filter(r=>r[1]&&r[1]!=='FullName').map(r=>({
       id:String(r[0]||''),name:r[1]||'',role:r[2]||'',phone:String(r[3]||''),
       cont:r[4]||'SMS',payType:r[5]||'Monthly',amt:parseFloat(r[6])||0,
-      start:String(r[7]||''),status:r[8]||'Active',cat:r[9]||'Support Staff',
+      status:String(r[8]||'Active').trim(),cat:String(r[9]||'Support Staff').trim(),
     }));
     rWks(); updStats();
   }catch(e){ console.log('Workers error',e); }
