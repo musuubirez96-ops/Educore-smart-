@@ -623,7 +623,7 @@ async function loadAll(){
     const payroll=wks.reduce((s,w)=>s+w.amt,0);
     document.getElementById('sumPayroll').textContent='UGX '+fm(payroll);
 document.getElementById('sumWkCount').textContent=wks.length+' active workers';
-    document.getElementById('ovWks').textContent=wks.filter(w=>w.status==='Active').length;
+    document.getElementById('ovWks').textContent=wks.length;
   }catch(e){console.log('Workers error',e);}
   try{
     const rows=await fetchGviz('stafflog');
@@ -633,12 +633,12 @@ document.getElementById('sumWkCount').textContent=wks.length+' active workers';
 }
 
 function updOverview(){
-  const active=stu.filter(s=>s.status==='Active');
+  const active=stu;
   const totalFee=active.reduce((s,x)=>s+x.fee,0);
   const totalPaid=active.reduce((s,x)=>s+x.paid,0);
   const totalBal=active.reduce((s,x)=>s+x.bal,0);
   const rate=totalFee>0?Math.round((totalPaid/totalFee)*100):0;
-  document.getElementById('ovStu').textContent=active.length;
+  document.getElementById('ovStu').textContent=stu.length;
   document.getElementById('ovCollected').textContent='UGX '+fm(totalPaid);
   document.getElementById('ovOwing').textContent='UGX '+fm(totalBal);
   document.getElementById('sumRate').textContent=rate+'%';
@@ -696,7 +696,7 @@ function rReports(){
 function rAnalysis(){
   document.getElementById('analysisLocked').style.display='none';
   document.getElementById('analysisContent').style.display='block';
-  const active=stu.filter(s=>s.status==='Active'&&(s.eng||s.math||s.sci||s.sst));
+  const active=stu.filter(s=>s.eng||s.math||s.sci||s.sst);
   if(!active.length)return;
   const scored=active.map(s=>({...s,avg:Math.round((s.eng+s.math+s.sci+s.sst)/4)})).sort((a,b)=>b.avg-a.avg);
   const best=scored[0];
@@ -750,7 +750,7 @@ function rAnalysis(){
 
 function rPayroll(){
   const grid=document.getElementById('payrollGrid');
-  const active=wks.filter(w=>w.status==='Active');
+  const active=wks.filter(w=>w.status!=='Quit'&&w.status!=='Frozen');
   if(!active.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text-dim)">No active workers.</div>';return;}
   grid.innerHTML=active.map(w=>`
     <div class="wc">
