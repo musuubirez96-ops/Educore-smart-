@@ -6,7 +6,7 @@
   "accentColor": "#f0a500",
   "phone": "07XXXXXXXX",
   "location": "Kampala, Uganda",
-  "sheetId": "YOUR_GOOGLE_SHEET_ID",
+  "sheetId": "https://docs.google.com/spreadsheets/d/1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA/edit?usp=drivesdk",
   "scriptUrl": "YOUR_APPS_SCRIPT_URL",
   "package": "trial",
   "trialStart": "2026-06-08",
