@@ -972,7 +972,7 @@ function rBal(){
 }
 
 function updStats(){
-  document.getElementById('stTotal').textContent=stu.filter(s=>s.status==='Active').length;
+  document.getElementById('stTotal').textContent=stu.length;
   document.getElementById('stPaid').textContent=stu.filter(s=>s.bal===0).length;
   document.getElementById('stOwing').textContent=stu.filter(s=>s.bal>0).length;
   document.getElementById('stWks').textContent=wks.filter(w=>w.status==='Active').length;
