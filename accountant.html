@@ -753,7 +753,20 @@ function calcNewBal(){
 }
 
 function showUpgradeNotice(){toast('🔒 WhatsApp messaging available on Pro. See Software Update page.',false);setTimeout(()=>showPage('update',null),1500);}
-
+function rExps(){
+  const tb=document.getElementById('expBody');
+  if(!exps.length){tb.innerHTML='<tr class="lr"><td colspan="7">No expenses recorded yet.</td></tr>';return;}
+  const cc={Supplies:'bdg-o',Utilities:'bdg-o',Maintenance:'bdg-r',Activities:'bdg-g',Payroll:'bdg-b',Other:'bdg-dk'};
+  tb.innerHTML=exps.map(e=>`<tr>
+    <td style="white-space:normal;max-width:120px">${e.desc}</td>
+    <td><span class="bdg ${cc[e.cat]||'bdg-dk'}">${e.cat}</span></td>
+    <td style="font-weight:700;color:var(--red);white-space:nowrap">UGX ${fm(e.amt)}</td>
+    <td style="white-space:nowrap">${e.date}</td>
+    <td style="white-space:nowrap">${e.approved}</td>
+    <td style="white-space:nowrap">${e.by}</td>
+    <td><span class="bdg ${e.approved&&e.approved!=='—'?'bdg-g':'bdg-o'}">${e.approved&&e.approved!=='—'?'✅ Approved':'⏳ Pending'}</span></td>
+  </tr>`).join('');
+  }
 async function recordPayment(){
   if(isExpired()){toast('⚠️ System update required.',false);return;}
   const id=document.getElementById('pStuId').value.trim();const name=document.getElementById('pStuName').value.trim();
