@@ -528,7 +528,7 @@ function checkTrialBanner(){
   else{const days=termDaysLeft();if(days<=14){banner.className='trial-banner warning';banner.innerHTML=`🟡 ${days} days until update due. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">View options →</a>`;}else banner.style.display='none';}
   if(document.getElementById('daysLeftEl')){const p=resolvePackage();const d=p==='trial'?trialDaysLeft():termDaysLeft();document.getElementById('daysLeftEl').textContent=isExpired()?'Expired':d+' days';document.getElementById('daysLeftEl').style.color=d<=3?'var(--red)':d<=7?'var(--orange)':'var(--green)';}
 }
-
+let cu='',term=2,stu=[],wks=[],todayPays=[],allPays=[],exps=[],approvals={},tries=0;
 const SK='educore_acct_v2';
 function getAccounts(){try{return JSON.parse(localStorage.getItem(SK))||{};}catch(e){return{};}}
 function saveAccounts(a){localStorage.setItem(SK,JSON.stringify(a));}
