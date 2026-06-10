@@ -597,7 +597,20 @@ async function loadWks(){
       cont:r[4]||'SMS',payType:r[5]||'Monthly',amt:parseFloat(r[6])||0,
       status:String(r[8]||'Active').trim(),cat:String(r[9]||'Support Staff').trim(),termPaid:0,
     }));
-    rWks();
+  async function loadExps(){
+  try{
+    const rows=await fetchGviz('expenses');
+    exps=rows.filter(r=>r[0]&&r[0]!=='Description').map(r=>({
+      desc:String(r[0]||''),
+      cat:String(r[1]||'Other'),
+      amt:parseFloat(r[2])||0,
+      date:String(r[3]||''),
+      approved:String(r[4]||'—'),
+      by:String(r[5]||''),
+    }));
+    rExps();
+  }catch(e){console.log('Expenses error',e);}
+  }
   }catch(e){console.log('Workers error',e);}
 }
 
