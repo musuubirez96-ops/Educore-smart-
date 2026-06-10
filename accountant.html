@@ -779,7 +779,11 @@ function rWks(){
       <div class="wpay">UGX ${fm(w.amt)}</div>
       <div class="wfreq">Per ${w.payType}</div>
       <div class="wbs">
-        <button class="wb wfull" onclick="payWk('${w.id}','full')">💰 Full Pay</button>
+        ${approvals[w.id]?
+  `<button class="wb wfull" onclick="payWk('${w.id}','full')">💰 Full Pay</button>
+   <button class="wb wadv" onclick="payWk('${w.id}','advance')">📤 Advance</button>`:
+  `<button class="wb" style="background:var(--red-pale);color:var(--red);grid-column:1/-1" onclick="toast('Ask Principal to approve first',false)">⏳ Awaiting Principal Approval</button>`
+                            }
         <button class="wb wadv" onclick="payWk('${w.id}','advance')">📤 Advance</button>
       </div>
     </div>`;
