@@ -646,6 +646,46 @@ function quickSearch(val){
 // STUDENT PROFILE MODAL
 function viewProf(id){
   const s=stu.find(x=>x.id===id);if(!s)return;
+  const history=allPays.filter(p=>p.id===s.id);
+  document.getElementById('profBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+      <div style="width:52px;height:52px;border-radius:50%;background:${col(s.name)};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;color:#fff">${ini(s.name)}</div>
+      <div><div style="font-family:'Fraunces',serif;font-size:1rem">${s.name}</div>
+      <div style="font-size:0.72rem;color:var(--text-dim)">${s.id} · ${s.cls}</div>
+      <span style="background:${s.bal===0?'var(--green-pale)':'var(--red-pale)'};color:${s.bal===0?'var(--green)':'var(--red)'};padding:2px 8px;border-radius:20px;font-size:0.66rem;font-weight:700">${s.bal===0?'Paid':'Owing'}</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div><div style="font-size:0.61rem;font-weight:700;text-transform:uppercase;color:var(--text-dim)">Parent</div><div style="font-size:0.8rem;font-weight:600">${s.parent}</div></div>
+      <div><div style="font-size:0.61rem;font-weight:700;text-transform:uppercase;color:var(--text-dim)">Phone</div><div style="font-size:0.8rem;font-weight:600">${s.phone}</div></div>
+      <div><div style="font-size:0.61rem;font-weight:700;text-transform:uppercase;color:var(--text-dim)">Term Fee</div><div style="font-size:0.8rem;font-weight:600">UGX ${fm(s.fee)}</div></div>
+      <div><div style="font-size:0.61rem;font-weight:700;text-transform:uppercase;color:var(--text-dim)">Paid</div><div style="font-size:0.8rem;font-weight:600;color:var(--green)">UGX ${fm(s.paid)}</div></div>
+      <div><div style="font-size:0.61rem;font-weight:700;text-transform:uppercase;color:var(--text-dim)">Balance</div><div style="font-size:0.8rem;font-weight:600;color:${s.bal>0?'var(--red)':'var(--green)'}">UGX ${fm(s.bal)}</div></div>
+    </div>
+    <div style="font-family:'Fraunces',serif;font-size:0.88rem;color:var(--primary);margin-bottom:10px">Payment History</div>
+    ${history.length?`
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:300px">
+      <thead><tr style="background:var(--bg)">
+        <th style="padding:7px 10px;font-size:0.63rem;font-weight:700;color:var(--text-dim);text-align:left;border-bottom:1px solid var(--border)">Amount</th>
+        <th style="padding:7px 10px;font-size:0.63rem;font-weight:700;color:var(--text-dim);text-align:left;border-bottom:1px solid var(--border)">Balance</th>
+        <th style="padding:7px 10px;font-size:0.63rem;font-weight:700;color:var(--text-dim);text-align:left;border-bottom:1px solid var(--border)">Method</th>
+        <th style="padding:7px 10px;font-size:0.63rem;font-weight:700;color:var(--text-dim);text-align:left;border-bottom:1px solid var(--border)">Date</th>
+      </tr></thead>
+      <tbody>${history.map(p=>`<tr>
+        <td style="padding:7px 10px;font-size:0.78rem;font-weight:700;color:var(--green);border-bottom:1px solid var(--border)">UGX ${fm(p.amt)}</td>
+        <td style="padding:7px 10px;font-size:0.78rem;color:${p.bal>0?'var(--red)':'var(--green)'};border-bottom:1px solid var(--border)">UGX ${fm(p.bal)}</td>
+        <td style="padding:7px 10px;font-size:0.78rem;border-bottom:1px solid var(--border)">${p.meth}</td>
+        <td style="padding:7px 10px;font-size:0.78rem;border-bottom:1px solid var(--border)">${p.date}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`:'<div style="text-align:center;padding:16px;color:var(--text-dim);font-size:0.78rem">No payment history found.</div>'}
+    <div style="display:flex;gap:7px;margin-top:14px">
+      <button class="btn bgreen" onclick="selectStuFromProf('${s.id}');closeMo('profMo')">💰 Record Payment</button>
+      <button class="btn boutline" onclick="closeMo('profMo')">Close</button>
+    </div>`;
+  document.getElementById('profMo').classList.add('open');
+}
+  const s=stu.find(x=>x.id===id);if(!s)return;
   document.getElementById('profBody').innerHTML=`
     <div class="ph"><div class="pav" style="background:${col(s.name)}">${ini(s.name)}</div>
     <div><div class="pname">${s.name}</div><div class="psub">${s.id} · ${s.cls}</div>
