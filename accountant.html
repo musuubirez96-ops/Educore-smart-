@@ -764,7 +764,31 @@ function rExps(){
   const cc={Supplies:'bdg-o',Utilities:'bdg-o',Maintenance:'bdg-r',Activities:'bdg-g',Payroll:'bdg-b',Other:'bdg-dk'};
   tb.innerHTML=exps.map(e=>`<tr>
     <td>${e.desc}</td><td><span class="bdg ${cc[e.cat]||'bdg-dk'}">${e.cat}</span></td>
-    <td style="font-weight:700;color:var(--red)">UGX ${fm(e.amt)}</td>
+   function searchWk(val){
+  if(!val.trim()){rWks();return;}
+  const f=wks.filter(w=>w.name.toLowerCase().includes(val.toLowerCase())||w.role.toLowerCase().includes(val.toLowerCase()));
+  const grid=document.getElementById('wGrid');
+  if(!f.length){grid.innerHTML='<div style="text-align:center;padding:32px;color:var(--text-dim)">No workers found.</div>';return;}
+  const active=f.filter(w=>w.status!=='Quit'&&w.status!=='Frozen');
+  grid.innerHTML=active.map(w=>{
+    const ps=w.termPaid>=w.amt?'Paid':w.termPaid>0?'Partial':'Not Paid';
+    const pc=w.termPaid>=w.amt?'wpaid':w.termPaid>0?'wpart':'wnpay';
+    return `<div class="wc">
+      <div class="wt"><div class="wav" style="background:${col(w.name)}">${ini(w.name)}</div>
+      <div><div class="wname">${w.name}</div><div class="wrole">${w.role}</div></div></div>
+      <span class="bdg ${w.cat==='Teaching Staff'?'bdg-b':'bdg-g'}" style="margin-bottom:7px;display:inline-block">${w.cat}</span>
+      <div><span class="wstatus ${pc}">${ps}</span></div>
+      <div class="wpay">UGX ${fm(w.amt)}</div>
+      <div class="wfreq">Per ${w.payType}</div>
+      <div class="wbs">
+        ${approvals[w.id]?
+          `<button class="wb wfull" onclick="payWk('${w.id}','full')">💰 Full Pay</button>
+           <button class="wb wadv" onclick="payWk('${w.id}','advance')">📤 Advance</button>`:
+          `<button class="wb" style="background:var(--red-pale);color:var(--red);flex:1" onclick="toast('Ask Principal to approve first',false)">⏳ Awaiting Approval</button>`}
+      </div>
+    </div>`;
+  }).join('');
+  } <td style="font-weight:700;color:var(--red)">UGX ${fm(e.amt)}</td>
     <td>${e.date}</td><td>${e.approved}</td><td>${e.by}</td>
   </tr>`).join('');
 }
