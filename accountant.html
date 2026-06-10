@@ -788,8 +788,26 @@ function rWks(){
 
 function payWk(id,type){
   const w=wks.find(x=>x.id===id);if(!w)return;
+  if(!approvals[w.id]){toast('⚠️ Payment not approved by Principal yet. Ask Principal to approve first.',false);return;}
   if(type==='full'){
-    if(!confirm(`Pay full salary of UGX ${fm(w.amt)} to ${w.name}?\n\nMake sure Principal has approved this payment.`))return;
+    if(!confirm(`Pay full salary of UGX ${fm(w.amt)} to ${w.name}?`))return;
+    w.termPaid=w.amt;
+    exps.unshift({desc:`${w.name} - ${w.payType} Salary`,cat:'Payroll',amt:w.amt,date:nd(),approved:'Principal',by:cu});
+    rExps();rWks();sendWorkerMsg(w,w.amt,'Full Salary');toast(`✅ UGX ${fm(w.amt)} paid to ${w.name}`);
+    fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'payWorker',workerName:w.name,payType:'Full',amount:w.amt,date:nd(),time:nt(),paidBy:cu})});
+  }else{
+    document.getElementById('advTitle').textContent=`Advance — ${w.name}`;
+    document.getElementById('advBody').innerHTML=`
+      <p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:13px">Full salary: UGX ${fm(w.amt)} per ${w.payType}</p>
+      <div style="margin-bottom:13px"><label style="font-size:0.66rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:5px">Advance Amount (UGX)</label>
+      <input type="number" id="advAmt" placeholder="e.g. 200000" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:9px 11px;font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none"/></div>
+      <div style="display:flex;gap:7px;justify-content:flex-end">
+        <button class="btn boutline" onclick="closeMo('advMo')">Cancel</button>
+        <button class="btn bgreen" onclick="confirmAdv('${w.id}')">Pay Advance</button>
+      </div>`;
+    document.getElementById('advMo').classList.add('open');
+  }
+      }
     w.termPaid=w.amt;
     exps.unshift({desc:`${w.name} - ${w.payType} Salary`,cat:'Payroll',amt:w.amt,date:nd(),approved:'Principal',by:cu});
     rExps();rWks();sendWorkerMsg(w,w.amt,'Full Salary');toast(`✅ UGX ${fm(w.amt)} paid to ${w.name}`);
