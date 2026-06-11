@@ -61,7 +61,7 @@ nav{flex:1;padding:10px 0;}
 
 /* ── MAIN ── */
 #main{margin-left:var(--sidebar-w);}
-#topbar{position:sticky;top:0;height:var(--topbar-h);background:var(--card);border-bottom:1px solid #eee;display:flex;align-items:center;gap:12px;padding:0 20px;z-index:50;}
+#topbar{position:sticky;top:0;height:var(--topbar-h);background:var(--card);border-bottom:1px solid #eee;display:flex;align-items:center;gap:10px;padding:0 16px;z-index:50;}
 #topbar h3{font-family:'Fraunces',serif;font-size:17px;flex-shrink:0;}
 .search-wrap{position:relative;flex:1;max-width:320px;}
 .search-wrap input{width:100%;padding:8px 12px 8px 34px;border:1px solid #e0e0e0;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;}
@@ -223,16 +223,33 @@ table tr.clickable:hover td{background:#fafafa;cursor:pointer;}
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
   :root{--sidebar-w:0px;}
-  #sidebar{transform:translateX(-240px);transition:transform .3s;width:240px;}
-  #sidebar.open{transform:translateX(0);}
+  #sidebar{position:fixed;top:0;left:0;width:260px;height:100vh;transform:translateX(-260px);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:300;}
+  #sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.25);}
+  #sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:299;}
+  #sb-overlay.visible{display:block;}
   #main{margin-left:0;}
-  .stat-row{grid-template-columns:1fr 1fr;}
+  #topbar{padding:0 12px;gap:8px;}
+  #topbar h3{font-size:15px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .search-wrap{flex:1;min-width:0;max-width:none;}
+  .search-wrap input{font-size:12px;padding:7px 10px 7px 30px;}
+  .term-sel{padding:5px 6px;font-size:12px;max-width:80px;}
+  .datetime-badge{display:none;}
+  .stat-row{grid-template-columns:1fr 1fr;gap:10px;}
+  .stat-row .stat-card:last-child{grid-column:1/-1;}
+  .stat-card .value{font-size:22px;}
   .form-grid{grid-template-columns:1fr;}
   .pkg-grid{grid-template-columns:1fr;}
-  .info-cards{grid-template-columns:1fr;}
+  .info-cards{grid-template-columns:1fr 1fr;}
+  .page{padding:14px 12px 40px;}
+  .card{padding:14px;}
+  .workers-grid{grid-template-columns:1fr;}
   .hamburger{display:flex !important;}
 }
-.hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:none;border:none;cursor:pointer;}
+@media(max-width:400px){
+  .info-cards{grid-template-columns:1fr;}
+  #topbar h3{max-width:90px;}
+}
+.hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:none;border:none;cursor:pointer;color:var(--primary);flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -281,6 +298,8 @@ table tr.clickable:hover td{background:#fafafa;cursor:pointer;}
 
 <!-- APP -->
 <div id="app">
+  <!-- Sidebar overlay -->
+  <div id="sb-overlay" onclick="closeSidebar()"></div>
   <!-- Sidebar -->
   <aside id="sidebar">
     <div class="sb-brand">
@@ -881,11 +900,18 @@ function showPage(name, navEl){
   if(name==='payroll') loadWorkers();
   if(name==='history') loadHistory();
   if(name==='update') renderUpdatePage();
-  if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+  if(window.innerWidth <= 768) closeSidebar();
 }
 
 function toggleSidebar(){
-  document.getElementById('sidebar').classList.toggle('open');
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sb-overlay');
+  const isOpen = sb.classList.contains('open');
+  if(isOpen){ closeSidebar(); } else { sb.classList.add('open'); ov.classList.add('visible'); }
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('visible');
 }
 
 // ─────────────────────────────────────────────
