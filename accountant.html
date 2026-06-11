@@ -704,15 +704,13 @@ async function loadWks(){
 async function loadExps(){
   try{
     const rows=await fetchGviz('expenses');
-    const fromSheet=rows.filter(r=>r[1]&&r[1]!=='Description'&&r[1]!=='DESCRIPTION').map(r=>({
-  id:String(r[0]||''),
-  desc:String(r[1]||''),
-  cat:String(r[2]||'Other'),
-  amt:parseFloat(r[3])||0,
-  date:String(r[4]||''),
-  approved:String(r[5]||'—'),
-  by:String(r[6]||''),
-}));
+    const fromSheet=rows.filter(r=>r[0]&&r[0]!=='Description'&&r[0]!=='DESCRIPTION').map(r=>({
+      desc:String(r[0]||''),
+      cat:String(r[1]||'Other'),
+      amt:parseFloat(r[2])||0,
+      date:String(r[3]||''),
+      approved:String(r[4]||'—'),
+      by:String(r[5]||''),
     }));
     // Merge sheet expenses with locally added ones (avoid duplicates)
     const localDescs=exps.map(e=>e.desc+e.date);
@@ -725,16 +723,17 @@ async function loadExps(){
 
 async function loadPayHistory(){
   try{
+    const rows=await fetchGviz('payments');
     const fromSheet=rows.filter(r=>r[0]&&r[0]!=='StudentID'&&r[0]!=='STUDENTID').map(r=>({
-  id:String(r[0]||''),
-  name:String(r[1]||''),
-  cls:String(r[2]||''),
-  amt:parseFloat(r[3])||0,
-  bal:parseFloat(r[4])||0,
-  date:String(r[5]||''),
-  time:String(r[6]||''),
-  by:String(r[7]||''),
-  meth:String(r[8]||'Cash'),
+      id:String(r[0]||''),
+      name:String(r[1]||''),
+      cls:String(r[2]||''),
+      amt:parseFloat(r[3])||0,
+      bal:parseFloat(r[4])||0,
+      meth:String(r[5]||'Cash'),
+      date:String(r[6]||''),
+      time:String(r[7]||''),
+      by:String(r[8]||''),
     }));
     // Combine with today's payments
     const combined=[...todayPays];
