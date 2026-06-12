@@ -626,7 +626,7 @@ async function loadAll(){
     const payroll=wks.filter(w=>w.status==='Active').reduce((s,w)=>s+w.amt,0);
     document.getElementById('sumPayroll').textContent='UGX '+fm(payroll);
     document.getElementById('sumWkCount').textContent=wks.filter(w=>w.status==='Active').length+' active workers';
-    document.getElementById('ovWks').textContent=wks.filter(w=>w.status==='Active').length;
+    document.getElementById('ovWks').textContent=wks.length;
   }catch(e){console.log('Workers error',e);}
   try{
     const rows=await fetchGviz('stafflog');
@@ -641,7 +641,7 @@ function updOverview(){
   const totalPaid=active.reduce((s,x)=>s+x.paid,0);
   const totalBal=active.reduce((s,x)=>s+x.bal,0);
   const rate=totalFee>0?Math.round((totalPaid/totalFee)*100):0;
-  document.getElementById('ovStu').textContent=active.length;
+  document.getElementById('ovStu').textContent=stu.length;
   document.getElementById('ovCollected').textContent='UGX '+fm(totalPaid);
   document.getElementById('ovOwing').textContent='UGX '+fm(totalBal);
   document.getElementById('sumRate').textContent=rate+'%';
