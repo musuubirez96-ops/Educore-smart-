@@ -648,7 +648,22 @@ function updOverview(){
   const rate=totalFee>0?Math.round((totalPaid/totalFee)*100):0;
   document.getElementById('ovStu').textContent=stu.length;
   document.getElementById('ovCollected').textContent='UGX '+fm(totalPaid);
-  document.getElementById('ovOwing').textContent='UGX '+fm(totalBal);
+  document.getElementById('sumSub').textContent=`UGX ${fm(totalPaid)} of UGX ${fm(totalFee)} total fees`;
+  // Today's payments
+  fetchGviz('payments').then(rows=>{
+    const today=nd();
+    const todayRows=rows.filter(r=>r[5]&&String(r[5]).includes(today.split('/')[2]||'2026'));
+    const total=todayRows.reduce((s,r)=>s+(parseFloat(r[3])||0),0);
+    document.getElementById('ovTodayPay').textContent='UGX '+fm(total);
+  }).catch(()=>{});
+  // Today's expenses
+  fetchGviz('expenses').then(rows=>{
+    const today=nd();
+    const todayRows=rows.filter(r=>r[4]&&String(r[4]).includes(today.split('/')[2]||'2026'));
+    const total=todayRows.reduce((s,r)=>s+(parseFloat(r[3])||0),0);
+    document.getElementById('ovTodayExp').textContent='UGX '+fm(total);
+  }).catch(()=>{});
+  }
   document.getElementById('sumRate').textContent=rate+'%';
   document.getElementById('sumRate').style.color=rate>=80?'var(--green)':rate>=50?'var(--orange)':'var(--red)';
   document.getElementById('sumBar').style.width=rate+'%';
