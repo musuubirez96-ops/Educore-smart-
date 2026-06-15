@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduCore Principal Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#2d2d2d;
+  --accent:#f0a500;
+  --bg:#f5f5f5;
+  --card:#ffffff;
+  --green:#1a7a4a;
+  --red:#b03a2e;
+  --orange:#d35400;
+  --blue:#1b4f72;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:#222;}
+h1,h2,h3,h4{font-family:'Fraunces',serif;}
+img{max-width:100%;}
+
+/* ---------- LOGIN ---------- */
+#loginScreen{
+  position:fixed;inset:0;background:linear-gradient(135deg,var(--primary),#1a1a1a);
+  display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;
+}
+.loginBox{
+  background:var(--card);border-radius:16px;padding:32px 24px;width:100%;max-width:380px;
+  box-shadow:0 20px 50px rgba(0,0,0,.3);text-align:center;
+}
+.loginBox img{width:56px;height:56px;border-radius:12px;margin-bottom:8px;object-fit:cover;}
+.loginBox h2{font-size:1.4rem;margin-bottom:4px;}
+.loginBox p.subtitle{color:#888;font-size:.85rem;margin-bottom:20px;}
+.tabSwitch{display:flex;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:20px;}
+.tabSwitch button{flex:1;padding:10px;border:none;background:none;border-radius:8px;font-weight:700;cursor:pointer;color:#888;font-family:'DM Sans',sans-serif;}
+.tabSwitch button.active{background:var(--card);color:var(--primary);box-shadow:0 2px 6px rgba(0,0,0,.08);}
+.inputGroup{margin-bottom:12px;text-align:left;}
+.inputGroup label{font-size:.8rem;font-weight:700;color:#666;display:block;margin-bottom:4px;}
+.inputGroup input{width:100%;padding:12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:1rem;font-family:'DM Sans',sans-serif;background:var(--bg);}
+.inputGroup input:focus{outline:none;border-color:var(--accent);}
+.btnPrimary{
+  width:100%;padding:13px;border:none;border-radius:10px;background:var(--primary);color:#fff;
+  font-weight:700;font-size:1rem;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif;
+}
+.btnPrimary:active{opacity:.85;}
+.loginMsg{margin-top:12px;font-size:.85rem;font-weight:600;min-height:18px;}
+.loginMsg.error{color:var(--red);}
+.loginMsg.success{color:var(--green);}
+.loginMsg.locked{color:var(--red);font-size:.78rem;line-height:1.4;}
+
+/* ---------- APP LAYOUT ---------- */
+#appScreen{display:none;}
+#appScreen.show{display:flex;min-height:100vh;}
+
+.sidebar{
+  width:230px;background:var(--primary);color:#fff;flex-shrink:0;
+  display:flex;flex-direction:column;padding:20px 14px;position:fixed;top:0;left:0;height:100vh;
+  transform:translateX(-100%);transition:transform .25s ease;z-index:1000;overflow-y:auto;
+}
+.sidebar.open{transform:translateX(0);}
+.sidebar-header{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
+.sidebar-header img{width:48px;height:48px;border-radius:10px;object-fit:cover;}
+.sidebar-header .sname{font-family:'Fraunces',serif;font-weight:700;font-size:1.05rem;line-height:1.2;}
+.sidebar-header .smotto{font-size:.7rem;color:#bbb;margin-top:2px;}
+.sidebar-user{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);padding:10px;border-radius:10px;margin-bottom:18px;}
+.avatar{
+  width:38px;height:38px;border-radius:50%;background:var(--accent);color:#2d2d2d;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;
+}
+.sidebar-user .uname{font-size:.85rem;font-weight:700;}
+.sidebar-user .urole{font-size:.7rem;color:#bbb;}
+.navlist{list-style:none;flex:1;}
+.navlist li{margin-bottom:4px;}
+.navlist a{
+  display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:#ddd;
+  text-decoration:none;font-size:.88rem;font-weight:600;cursor:pointer;transition:.15s;
+}
+.navlist a .ic{font-size:1.05rem;}
+.navlist a:hover{background:rgba(255,255,255,.06);color:#fff;}
+.navlist a.active{background:var(--accent);color:#2d2d2d;}
+.signoutBtn{
+  margin-top:10px;width:100%;padding:11px;border:1.5px solid rgba(255,255,255,.2);background:none;
+  color:#fff;border-radius:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;
+}
+.signoutBtn:active{background:rgba(255,255,255,.1);}
+
+.sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;}
+.sidebarOverlay.show{display:block;}
+
+.mainArea{flex:1;display:flex;flex-direction:column;min-height:100vh;width:100%;}
+
+.topbar{
+  background:var(--card);padding:12px 16px;display:flex;align-items:center;gap:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);position:sticky;top:0;z-index:100;flex-wrap:wrap;
+}
+.menuBtn{
+  width:40px;height:40px;border:none;background:var(--bg);border-radius:10px;font-size:1.2rem;cursor:pointer;flex-shrink:0;
+}
+.topbar h1{font-size:1.05rem;flex:1;min-width:100px;}
+.searchWrap{position:relative;flex:1 1 100%;order:5;margin-top:8px;}
+.topbar.searchOrder{flex-wrap:wrap;}
+.searchInput{
+  width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:.9rem;
+  font-family:'DM Sans',sans-serif;background:var(--bg);
+}
+.searchResults{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);max-height:260px;overflow-y:auto;z-index:200;display:none;
+}
+.searchResults.show{display:block;}
+.searchResults .sres{padding:10px 14px;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:.85rem;}
+.searchResults .sres:hover{background:var(--bg);}
+.searchResults .sres b{font-family:'Fraunces',serif;}
+.termSelect{
+  padding:9px 10px;border:1.5px solid #e0e0e0;border-radius:10px;background:var(--card);font-weight:700;
+  font-size:.85rem;font-family:'DM Sans',sans-serif;cursor:pointer;
+}
+.dateBadge{
+  background:var(--bg);padding:9px 12px;border-radius:10px;font-size:.78rem;font-weight:600;color:#666;white-space:nowrap;
+}
+
+.content{padding:16px;flex:1;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* trial banner */
+.trialBanner{
+  padding:12px 16px;border-radius:12px;margin-bottom:16px;font-weight:700;font-size:.85rem;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;color:#2d2d2d;
+}
+.trialBanner a{color:inherit;text-decoration:underline;}
+.trialBanner.gold{background:linear-gradient(135deg,#fff3cd,#ffe9a8);border:1.5px solid var(--accent);}
+.trialBanner.warn{background:#fde3cf;border:1.5px solid var(--orange);color:#7a3505;}
+.trialBanner.danger{background:#fbdcd6;border:1.5px solid var(--red);color:#7a2418;}
+
+/* stat grid */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:700px){.grid3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:420px){.grid3{grid-template-columns:1fr;}}
+.statCard{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.statCard .slabel{font-size:.72rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.statCard .sval{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;}
+.statCard .ssub{font-size:.72rem;color:#aaa;margin-top:4px;}
+.statCard.green .sval{color:var(--green);}
+.statCard.red .sval{color:var(--red);}
+.statCard.blue .sval{color:var(--blue);}
+.statCard.orange .sval{color:var(--orange);}
+.statCard.accent .sval{color:var(--accent);}
+
+.cardBox{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.05);margin-bottom:16px;}
+.cardBox h3{font-size:1rem;margin-bottom:12px;}
+.progressTrack{background:var(--bg);border-radius:20px;height:18px;overflow:hidden;}
+.progressFill{height:100%;background:linear-gradient(90deg,var(--green),#2ea876);border-radius:20px;transition:width .5s;display:flex;align-items:center;justify-content:flex-end;color:#fff;font-size:.7rem;font-weight:700;padding-right:8px;}
+.progressLabel{display:flex;justify-content:space-between;font-size:.78rem;color:#888;margin-top:6px;}
+
+.tableWrap{overflow-x:auto;border-radius:10px;}
+table{width:100%;min-width:550px;border-collapse:collapse;font-size:.82rem;}
+table th{background:var(--bg);text-align:left;padding:10px 12px;font-weight:700;color:#666;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+table td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+table tr:last-child td{border-bottom:none;}
+table tbody tr{cursor:pointer;transition:.15s;}
+table tbody tr:hover{background:var(--bg);}
+.studentCell{display:flex;align-items:center;gap:10px;}
+.studentCell .avatar{width:32px;height:32px;font-size:.75rem;}
+.studentCell .sid{font-size:.7rem;color:#999;}
+
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;}
+.badge.green{background:#e3f5ec;color:var(--green);}
+.badge.red{background:#fbe7e3;color:var(--red);}
+.badge.orange{background:#fdeee0;color:var(--orange);}
+.badge.blue{background:#e6eef5;color:var(--blue);}
+.badge.gray{background:#eee;color:#777;}
+
+/* charts (css bar charts) */
+.barChart{display:flex;align-items:flex-end;gap:10px;height:200px;padding:10px 4px;overflow-x:auto;}
+.barCol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:46px;flex:1;}
+.bar{width:28px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--accent),#c98700);transition:height .6s;min-height:4px;}
+.bar.blue{background:linear-gradient(180deg,var(--blue),#123a55);}
+.bar.green{background:linear-gradient(180deg,var(--green),#125c38);}
+.bar.red{background:linear-gradient(180deg,var(--red),#7d281c);}
+.barVal{font-size:.68rem;font-weight:700;color:#666;margin-bottom:4px;}
+.barLabel{font-size:.68rem;color:#999;margin-top:6px;text-align:center;line-height:1.2;word-break:break-word;max-width:60px;}
+
+/* highlight cards */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:420px){.grid4{grid-template-columns:1fr;}}
+.highlightCard{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.05);text-align:center;}
+.highlightCard .hic{font-size:1.6rem;margin-bottom:6px;}
+.highlightCard .hlabel{font-size:.7rem;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+.highlightCard .hval{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;margin-top:4px;}
+.highlightCard .hsub{font-size:.75rem;color:#aaa;margin-top:2px;}
+
+/* lock overlay */
+.lockBox{
+  background:var(--card);border-radius:16px;padding:40px 20px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+.lockBox .lic{font-size:3rem;margin-bottom:12px;}
+.lockBox h2{margin-bottom:8px;}
+.lockBox p{color:#888;font-size:.9rem;margin-bottom:16px;max-width:380px;margin-left:auto;margin-right:auto;}
+.lockBox a.upgradeBtn{
+  display:inline-block;background:var(--accent);color:#2d2d2d;padding:12px 24px;border-radius:10px;
+  font-weight:700;text-decoration:none;font-size:.9rem;
+}
+
+/* search bar generic */
+.filterBar{margin-bottom:14px;}
+.filterBar input{
+  width:100%;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:.88rem;
+  font-family:'DM Sans',sans-serif;background:var(--card);
+}
+
+/* worker cards */
+.workerGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px;}
+.workerCard{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.workerCard .wtop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.workerCard h4{font-size:.95rem;margin-bottom:2px;}
+.workerCard .wrole{font-size:.75rem;color:#888;}
+.workerCard .wamt{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;margin:8px 0 4px;}
+.workerCard .wfreq{font-size:.72rem;color:#aaa;margin-bottom:10px;}
+.approveBtn{
+  width:100%;padding:10px;border-radius:10px;border:none;font-weight:700;font-size:.82rem;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.approveBtn.approved{background:#e3f5ec;color:var(--green);cursor:default;}
+.approveBtn.pending{background:var(--orange);color:#fff;}
+
+/* modal */
+.modalOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;
+  z-index:2000;padding:16px;
+}
+.modalOverlay.show{display:flex;}
+.modalBox{
+  background:var(--card);border-radius:16px;padding:24px;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;
+  position:relative;
+}
+.modalBox .closeModal{
+  position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:var(--bg);
+  font-size:1rem;cursor:pointer;
+}
+.modalHead{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.modalHead .avatar{width:54px;height:54px;font-size:1.2rem;}
+.modalHead h2{font-size:1.15rem;}
+.modalHead .mid{font-size:.78rem;color:#999;}
+.modalBadges{display:flex;gap:6px;margin:6px 0 14px;flex-wrap:wrap;}
+.feeGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.feeBox{background:var(--bg);border-radius:10px;padding:10px;text-align:center;}
+.feeBox .flabel{font-size:.68rem;color:#999;text-transform:uppercase;font-weight:700;}
+.feeBox .fval{font-family:'Fraunces',serif;font-size:1rem;font-weight:700;margin-top:4px;}
+.resultsGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;}
+.resultBox{background:var(--bg);border-radius:10px;padding:10px;display:flex;justify-content:space-between;align-items:center;}
+.resultBox .rsub{font-size:.8rem;font-weight:700;}
+.resultBox .rscore{font-size:.8rem;color:#666;}
+.avgRow{display:flex;justify-content:space-between;align-items:center;background:var(--primary);color:#fff;
+  border-radius:10px;padding:12px 14px;font-weight:700;}
+
+/* toast */
+#toast{
+  position:fixed;bottom:18px;right:18px;background:var(--green);color:#fff;padding:12px 18px;border-radius:10px;
+  font-size:.85rem;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:3000;display:none;max-width:88vw;
+}
+#toast.show{display:block;animation:toastIn .3s ease;}
+#toast.warning{background:var(--orange);}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+/* watermark */
+#watermark{
+  position:fixed;bottom:20px;right:-20px;transform:rotate(-30deg);font-size:1.6rem;font-weight:800;
+  color:rgba(0,0,0,.08);pointer-events:none;z-index:1;font-family:'Fraunces',serif;display:none;
+}
+
+/* footer */
+.footer{
+  background:var(--primary);color:#ccc;padding:18px 16px;text-align:center;font-size:.78rem;margin-top:auto;
+}
+.footer .flinks{display:flex;justify-content:center;gap:14px;margin-top:8px;flex-wrap:wrap;}
+.footer .flinks a{color:var(--accent);text-decoration:none;font-weight:700;}
+
+/* payment buttons */
+.payGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px;}
+.payBtn{
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px;border-radius:12px;
+  text-decoration:none;font-weight:700;font-size:.82rem;color:#fff;text-align:center;
+}
+.payBtn.mtn{background:#ffcc00;color:#2d2d2d;}
+.payBtn.airtel{background:var(--red);}
+.payBtn.bank{background:var(--blue);}
+.payBtn.whatsapp{background:var(--green);}
+.payBtn .pic{font-size:1.5rem;}
+
+/* pkg comparison */
+.pkgGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px;}
+.pkgCard{background:var(--bg);border-radius:10px;padding:12px;text-align:center;}
+.pkgCard.current{border:2px solid var(--accent);background:#fff8e6;}
+.pkgCard h4{font-size:.85rem;margin-bottom:6px;}
+.pkgCard ul{list-style:none;font-size:.7rem;color:#888;text-align:left;line-height:1.6;}
+.pkgCard ul li:before{content:"✓ ";color:var(--green);font-weight:700;}
+
+.loadingRow td{text-align:center;color:#aaa;padding:24px;}
+.empty{text-align:center;color:#aaa;padding:30px;font-size:.85rem;}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div id="loginScreen">
+  <div class="loginBox">
+    <img id="loginBadge" src="" alt="badge" onerror="this.style.display='none'">
+    <h2 id="loginSchoolName">EduCore</h2>
+    <p class="subtitle">Principal Dashboard</p>
+    <div class="tabSwitch">
+      <button id="tabSignIn" class="active" onclick="switchTab('signin')">Sign In</button>
+      <button id="tabCreate" onclick="switchTab('create')">Create Account</button>
+    </div>
+
+    <div id="signinForm">
+      <div class="inputGroup">
+        <label>Full Name</label>
+        <input type="text" id="si_name" placeholder="e.g. Sarah Namutebi" autocomplete="off">
+      </div>
+      <div class="inputGroup">
+        <label>Password</label>
+        <input type="password" id="si_pass" placeholder="Enter password">
+      </div>
+      <button class="btnPrimary" onclick="signIn()">Sign In</button>
+    </div>
+
+    <div id="createForm" style="display:none;">
+      <div class="inputGroup">
+        <label>Full Name</label>
+        <input type="text" id="cr_name" placeholder="e.g. Sarah Namutebi" autocomplete="off">
+      </div>
+      <div class="inputGroup">
+        <label>Password</label>
+        <input type="password" id="cr_pass" placeholder="Create password">
+      </div>
+      <div class="inputGroup">
+        <label>Confirm Password</label>
+        <input type="password" id="cr_pass2" placeholder="Confirm password">
+      </div>
+      <button class="btnPrimary" onclick="createAccount()">Create Account</button>
+    </div>
+
+    <div id="loginMsg" class="loginMsg"></div>
+  </div>
+</div>
+
+<!-- ================= APP SCREEN ================= -->
+<div id="appScreen">
+  <div class="sidebarOverlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img id="sbBadge" src="" alt="badge" onerror="this.style.display='none'">
+      <div>
+        <div class="sname" id="sbSchoolName">School</div>
+        <div class="smotto" id="sbMotto">Motto</div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="avatar" id="sbAvatar">--</div>
+      <div>
+        <div class="uname" id="sbUserName">User</div>
+        <div class="urole">Principal</div>
+      </div>
+    </div>
+    <ul class="navlist">
+      <li><a class="active" data-page="page-dashboard" onclick="goPage('page-dashboard',this)"><span class="ic">📊</span> Dashboard</a></li>
+      <li><a data-page="page-reports" onclick="goPage('page-reports',this)"><span class="ic">📋</span> Student Reports</a></li>
+      <li><a data-page="page-analysis" onclick="goPage('page-analysis',this)"><span class="ic">📈</span> Full Analysis</a></li>
+      <li><a data-page="page-payroll" onclick="goPage('page-payroll',this)"><span class="ic">💰</span> Approve Payroll</a></li>
+      <li><a data-page="page-activity" onclick="goPage('page-activity',this)"><span class="ic">🕒</span> Staff Activity</a></li>
+      <li><a data-page="page-requirements" onclick="goPage('page-requirements',this)"><span class="ic">🎒</span> Requirements</a></li>
+      <li><a data-page="page-update" onclick="goPage('page-update',this)"><span class="ic">⚙️</span> Software Update</a></li>
+    </ul>
+    <button class="signoutBtn" onclick="signOut()">Sign Out</button>
+  </aside>
+
+  <div class="mainArea">
+    <div class="topbar">
+      <button class="menuBtn" onclick="toggleSidebar()">☰</button>
+      <h1 id="pageTitle">Dashboard</h1>
+      <select class="termSelect" id="termSelect" onchange="onTermChange()">
+        <option value="T1">Term 1</option>
+        <option value="T2">Term 2</option>
+        <option value="T3">Term 3</option>
+      </select>
+      <div class="dateBadge" id="dateBadge">--</div>
+      <div class="searchWrap">
+        <input type="text" class="searchInput" id="studentSearch" placeholder="🔎 Search student by name or ID..." oninput="onStudentSearch()">
+        <div class="searchResults" id="searchResults"></div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div id="trialBanner" class="trialBanner gold" style="display:none;"></div>
+
+      <!-- PAGE 1: DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="grid3" id="statGrid">
+          <div class="loadingRow" style="grid-column:1/-1;">Loading dashboard…</div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Fee Collection Rate</h3>
+          <div class="progressTrack"><div class="progressFill" id="feeProgressFill" style="width:0%;">0%</div></div>
+          <div class="progressLabel"><span id="feeCollectedLbl">Collected: 0</span><span id="feeOutstandingLbl">Outstanding: 0</span></div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Total Payroll</h3>
+          <div class="sval" id="totalPayrollVal" style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:700;">UGX 0</div>
+          <div class="ssub" style="color:#999;font-size:.78rem;margin-top:4px;" id="payrollSub">Based on active workers</div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Fee Collection by Class</h3>
+          <div class="barChart" id="classFeeChart"><div class="empty">No data</div></div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Subject Performance (Average Score)</h3>
+          <div class="barChart" id="subjectPerfChart"><div class="empty">No data</div></div>
+        </div>
+      </div>
+
+      <!-- PAGE 2: STUDENT REPORTS -->
+      <div class="page" id="page-reports">
+        <div class="cardBox">
+          <h3>Student Reports — <span id="reportTermLbl">Term 1</span></h3>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th><th>Class</th><th>English</th><th>Math</th><th>Science</th><th>SST</th>
+                  <th>Average</th><th>Grade</th><th>Fee Status</th>
+                </tr>
+              </thead>
+              <tbody id="reportsBody">
+                <tr class="loadingRow"><td colspan="9">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 3: FULL ANALYSIS -->
+      <div class="page" id="page-analysis">
+        <div id="analysisLocked" style="display:none;">
+          <div class="lockBox">
+            <div class="lic">🔒</div>
+            <h2>Full Analysis Locked</h2>
+            <p>Full Analysis is available on the Pro and Premium packages. Upgrade your EduCore plan to unlock school-wide performance insights, rankings and grade distributions.</p>
+            <a class="upgradeBtn" href="javascript:goPage('page-update', document.querySelector('[data-page=page-update]'))">Upgrade Package</a>
+          </div>
+        </div>
+        <div id="analysisContent" style="display:none;">
+          <div class="grid4" id="highlightGrid"></div>
+          <div class="cardBox">
+            <h3>Class Performance Ranking</h3>
+            <div class="barChart" id="classRankChart"><div class="empty">No data</div></div>
+          </div>
+          <div class="cardBox">
+            <h3>Grade Distribution</h3>
+            <div class="barChart" id="gradeDistChart"><div class="empty">No data</div></div>
+          </div>
+          <div class="cardBox">
+            <h3>Subject Pass Rates</h3>
+            <div class="barChart" id="subjectPassChart"><div class="empty">No data</div></div>
+          </div>
+          <div class="cardBox">
+            <h3>School Summary</h3>
+            <div class="tableWrap">
+              <table>
+                <thead><tr><th>Total Students</th><th>Pass Rate</th><th>Best Student</th><th>Strongest Subject</th><th>Weakest Subject</th></tr></thead>
+                <tbody id="schoolSummaryBody"><tr><td colspan="5" class="empty">No data</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 4: APPROVE PAYROLL -->
+      <div class="page" id="page-payroll">
+        <div class="cardBox" style="background:#fff8e6;border:1.5px solid var(--accent);">
+          <h3 style="margin-bottom:6px;">⚠️ Principal Approval Required</h3>
+          <p style="font-size:.85rem;color:#666;">Each worker's payroll must be approved by the Principal before payment is processed. Approvals are saved permanently and will remain even after you log out and sign back in.</p>
+        </div>
+        <div class="filterBar">
+          <input type="text" id="workerSearch" placeholder="🔎 Search worker by name or role..." oninput="renderWorkers()">
+        </div>
+        <div class="workerGrid" id="workerGrid">
+          <div class="empty">Loading workers…</div>
+        </div>
+        <div class="cardBox">
+          <h3>Payroll Summary</h3>
+          <div class="tableWrap">
+            <table>
+              <thead><tr><th>Worker</th><th>Role</th><th>Category</th><th>Pay Frequency</th><th>Salary</th><th>Approval</th></tr></thead>
+              <tbody id="payrollSummaryBody"><tr class="loadingRow"><td colspan="6">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 5: STAFF ACTIVITY -->
+      <div class="page" id="page-activity">
+        <div class="cardBox">
+          <h3>Staff Activity Log</h3>
+          <div class="tableWrap">
+            <table>
+              <thead><tr><th>Staff Member</th><th>Role</th><th>Action</th><th>Date</th><th>Time</th></tr></thead>
+              <tbody id="activityBody"><tr class="loadingRow"><td colspan="5">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 6: REQUIREMENTS -->
+      <div class="page" id="page-requirements">
+        <div class="cardBox">
+          <h3>Class Requirements List</h3>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr><th>Class</th><th>Item 1</th><th>Item 2</th><th>Item 3</th><th>Item 4</th><th>Item 5</th><th>Item 6</th></tr>
+              </thead>
+              <tbody id="requirementsListBody">
+                <tr class="loadingRow"><td colspan="7">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Student Requirements Status</h3>
+          <div class="filterBar">
+            <input type="text" id="reqStudentSearch" placeholder="🔎 Search student by name or ID..." oninput="renderRequirementsStatus()">
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr><th>Student</th><th>Class</th><th>Required Items</th><th>Brought</th><th>Status</th></tr>
+              </thead>
+              <tbody id="requirementsStatusBody">
+                <tr class="loadingRow"><td colspan="5">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 7: SOFTWARE UPDATE -->
+      <div class="page" id="page-update">
+        <div class="grid3">
+          <div class="statCard accent">
+            <div class="slabel">Current Package</div>
+            <div class="sval" id="pkgNameVal">--</div>
+          </div>
+          <div class="statCard">
+            <div class="slabel">Days Left (Trial)</div>
+            <div class="sval" id="trialDaysVal">--</div>
+          </div>
+          <div class="statCard blue">
+            <div class="slabel">Term Info</div>
+            <div class="sval" id="termInfoVal" style="font-size:1.1rem;">--</div>
+          </div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Package Comparison</h3>
+          <div class="pkgGrid" id="pkgComparisonGrid"></div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Upgrade / Renew Payment</h3>
+          <p style="font-size:.85rem;color:#666;">Choose a payment method below and contact Nexlora Digital Systems to activate your package.</p>
+          <div class="payGrid">
+            <a class="payBtn mtn" id="mtnBtn" href="#"><span class="pic">📱</span> MTN MoMo</a>
+            <a class="payBtn airtel" id="airtelBtn" href="#"><span class="pic">📱</span> Airtel Money</a>
+            <a class="payBtn bank" id="bankBtn" href="#"><span class="pic">🏦</span> Bank Transfer</a>
+            <a class="payBtn whatsapp" id="waBtn" href="#"><span class="pic">💬</span> WhatsApp Us</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <div>EduCore by Nexlora Digital Systems</div>
+      <div class="flinks">
+        <a id="footerCall" href="#">📞 Call</a>
+        <a id="footerWhatsapp" href="#" target="_blank">💬 WhatsApp</a>
+        <a href="javascript:goPage('page-update', document.querySelector('[data-page=page-update]'))">🔄 Update System</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT PROFILE MODAL -->
+<div class="modalOverlay" id="studentModal">
+  <div class="modalBox">
+    <button class="closeModal" onclick="closeModal()">✕</button>
+    <div class="modalHead">
+      <div class="avatar" id="modalAvatar">--</div>
+      <div>
+        <h2 id="modalName">Student Name</h2>
+        <div class="mid" id="modalId">ID: --</div>
+      </div>
+    </div>
+    <div class="modalBadges">
+      <span class="badge gray" id="modalClassBadge">Class</span>
+      <span class="badge" id="modalFeeBadge">Status</span>
+      <span class="badge" id="modalGradeBadge">Grade</span>
+    </div>
+    <div class="feeGrid">
+      <div class="feeBox"><div class="flabel">Term Fee</div><div class="fval" id="modalFee">0</div></div>
+      <div class="feeBox"><div class="flabel">Paid</div><div class="fval" id="modalPaid">0</div></div>
+      <div class="feeBox"><div class="flabel">Balance</div><div class="fval" id="modalBalance">0</div></div>
+    </div>
+    <h3 style="font-size:.95rem;margin-bottom:8px;">Academic Results</h3>
+    <div class="resultsGrid" id="modalResultsGrid"></div>
+    <div class="avgRow">
+      <span>Overall Average</span>
+      <span id="modalAverage">0%</span>
+    </div>
+    <h3 style="font-size:.95rem;margin:14px 0 8px;">Requirements</h3>
+    <div id="modalRequirements"></div>
+  </div>
+</div>
+
+<div id="watermark">EduCore</div>
+<div id="toast"></div>
+
+<script>
+/* ===================== CONFIG & GLOBAL STATE ===================== */
+let CFG = {
+  school:"Demo Primary School",
+  motto:"Excellence in Education",
+  badge:"https://placehold.co/48x48/2d2d2d/f0a500?text=E",
+  primaryColor:"#2d2d2d",
+  accentColor:"#f0a500",
+  phone:"+256700000000",
+  location:"Kampala, Uganda",
+  sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",
+  scriptUrl:"https://script.google.com/macros/s/AKfycbzmrg6C5OjTtsEZaxkXIskDdviS4G16paS9xO-hktghrKrsA_iu9ihDrhJDI_-LL-rc/exec",
+  package:"trial",
+  trialStart:"",
+  trialEnd:"",
+  termStart:"",
+  termEnd:"",
+  term:"T1",
+  nexloraPhone:"+256751658855"
+};
+
+const AUTH_KEY = "educore_principal_v2";
+const APPROVALS_KEY = "educore_payroll_approvals";
+
+let DATA = {
+  students: [],
+  workers: [],
+  stafflog: [],
+  requirements: [],
+  paymentsToday: 0,
+  expensesToday: 0
+};
+
+let currentUser = null;
+let currentTerm = "T1";
+
+/* ===================== UTILITIES ===================== */
+function $(id){ return document.getElementById(id); }
+
+function showToast(msg, type="success"){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (type === "warning" ? " warning" : "");
+  setTimeout(()=>{ t.className = ""; }, 3500);
+}
+
+function initials(name){
+  if(!name) return "--";
+  const parts = name.trim().split(/\s+/);
+  if(parts.length === 1) return parts[0].substring(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+}
+
+function fmtMoney(n){
+  n = Number(n) || 0;
+  return "UGX " + n.toLocaleString('en-US', {maximumFractionDigits:0});
+}
+
+function gradeFor(avg){
+  if(avg >= 80) return "A";
+  if(avg >= 60) return "B";
+  if(avg >= 40) return "C";
+  return "D";
+}
+
+function todayStr(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return yyyy + "-" + mm + "-" + dd;
+}
+
+/* normalize a date value from sheet (could be Date(...) gviz format, or string) to yyyy-mm-dd */
+function normalizeDate(v){
+  if(!v) return "";
+  v = String(v).trim();
+  // gviz Date(yyyy,mm,dd) format
+  const m = v.match(/Date\((\d+),(\d+),(\d+)/);
+  if(m){
+    const yyyy = m[1];
+    const mm = String(Number(m[2])+1).padStart(2,'0');
+    const dd = String(Number(m[3])).padStart(2,'0');
+    return yyyy + "-" + mm + "-" + dd;
+  }
+  // already yyyy-mm-dd or similar
+  const d = new Date(v);
+  if(!isNaN(d.getTime())){
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return yyyy + "-" + mm + "-" + dd;
+  }
+  return v;
+}
+
+/* ===================== AUTH ===================== */
+function switchTab(tab){
+  if(tab === "signin"){
+    $("tabSignIn").classList.add("active");
+    $("tabCreate").classList.remove("active");
+    $("signinForm").style.display = "block";
+    $("createForm").style.display = "none";
+  } else {
+    $("tabCreate").classList.add("active");
+    $("tabSignIn").classList.remove("active");
+    $("createForm").style.display = "block";
+    $("signinForm").style.display = "none";
+  }
+  $("loginMsg").textContent = "";
+  $("loginMsg").className = "loginMsg";
+}
+
+function getAuthStore(){
+  try{
+    const raw = localStorage.getItem(AUTH_KEY);
+    return raw ? JSON.parse(raw) : {users:{}, attempts:{}};
+  }catch(e){
+    return {users:{}, attempts:{}};
+  }
+}
+function saveAuthStore(store){
+  localStorage.setItem(AUTH_KEY, JSON.stringify(store));
+}
+
+function createAccount(){
+  const name = $("cr_name").value.trim();
+  const pass = $("cr_pass").value;
+  const pass2 = $("cr_pass2").value;
+  const msg = $("loginMsg");
+
+  if(!name || !pass || !pass2){
+    msg.className = "loginMsg error";
+    msg.textContent = "Please fill in all fields.";
+    return;
+  }
+  if(pass !== pass2){
+    msg.className = "loginMsg error";
+    msg.textContent = "Passwords do not match.";
+    return;
+  }
+  if(pass.length < 4){
+    msg.className = "loginMsg error";
+    msg.textContent = "Password must be at least 4 characters.";
+    return;
+  }
+
+  const store = getAuthStore();
+  const key = name.toLowerCase();
+  if(store.users[key]){
+    msg.className = "loginMsg error";
+    msg.textContent = "An account with this name already exists. Please sign in.";
+    return;
+  }
+  store.users[key] = { name: name, password: pass };
+  store.attempts[key] = 0;
+  saveAuthStore(store);
+
+  msg.className = "loginMsg success";
+  msg.textContent = "Account created! You can now sign in.";
+  setTimeout(()=>{
+    switchTab('signin');
+    $("si_name").value = name;
+  }, 900);
+}
+
+function signIn(){
+  const name = $("si_name").value.trim();
+  const pass = $("si_pass").value;
+  const msg = $("loginMsg");
+  const key = name.toLowerCase();
+
+  if(!name || !pass){
+    msg.className = "loginMsg error";
+    msg.textContent = "Please enter your name and password.";
+    return;
+  }
+
+  const store = getAuthStore();
+  const attempts = store.attempts[key] || 0;
+
+  if(attempts >= 4){
+    msg.className = "loginMsg locked";
+    msg.innerHTML = "🔒 Account locked after too many failed attempts.<br>Please contact Nexlora support: " + CFG.nexloraPhone;
+    return;
+  }
+
+  const user = store.users[key];
+  if(!user || user.password !== pass){
+    store.attempts[key] = attempts + 1;
+    saveAuthStore(store);
+    const remaining = 4 - store.attempts[key];
+    msg.className = "loginMsg error";
+    if(remaining > 0){
+      msg.textContent = "Incorrect name or password. " + remaining + " attempt(s) remaining.";
+    } else {
+      msg.className = "loginMsg locked";
+      msg.innerHTML = "🔒 Account locked after too many failed attempts.<br>Please contact Nexlora support: " + CFG.nexloraPhone;
+    }
+    return;
+  }
+
+  // success
+  store.attempts[key] = 0;
+  saveAuthStore(store);
+  currentUser = user;
+  msg.className = "loginMsg success";
+  msg.textContent = "Welcome back, " + user.name + "!";
+  setTimeout(()=>{ enterApp(); }, 400);
+}
+
+function signOut(){
+  currentUser = null;
+  $("appScreen").classList.remove("show");
+  $("loginScreen").style.display = "flex";
+  $("si_pass").value = "";
+}
+
+/* ===================== CONFIG LOADING ===================== */
+async function loadConfig(){
+  try{
+    const res = await fetch("config.json", {cache:"no-store"});
+    if(res.ok){
+      const json = await res.json();
+      CFG = Object.assign(CFG, json);
+    }
+  }catch(e){
+    console.warn("config.json not found, using defaults", e);
+  }
+  applyConfig();
+}
+
+function applyConfig(){
+  document.documentElement.style.setProperty('--primary', CFG.primaryColor || '#2d2d2d');
+  document.documentElement.style.setProperty('--accent', CFG.accentColor || '#f0a500');
+
+  $("loginSchoolName").textContent = CFG.school || "EduCore";
+  $("loginBadge").src = CFG.badge || "";
+  $("sbBadge").src = CFG.badge || "";
+  $("sbSchoolName").textContent = CFG.school || "School";
+  $("sbMotto").textContent = CFG.motto || "";
+
+  currentTerm = CFG.term || "T1";
+  $("termSelect").value = currentTerm;
+  $("reportTermLbl").textContent = currentTerm === "T1" ? "Term 1" : currentTerm === "T2" ? "Term 2" : "Term 3";
+
+  // footer links
+  const phoneDigits = (CFG.nexloraPhone || "").replace(/[^0-9+]/g,'');
+  $("footerCall").href = "tel:" + phoneDigits;
+  $("footerWhatsapp").href = "https://wa.me/" + phoneDigits.replace(/^\+/, '');
+
+  // payment buttons
+  $("mtnBtn").href = "tel:*165*3*1*" + phoneDigits.replace(/[^0-9]/g,'') + "#";
+  $("airtelBtn").href = "tel:*185*9*1*" + phoneDigits.replace(/[^0-9]/g,'') + "#";
+  $("bankBtn").href = "javascript:showToast('Contact Nexlora for bank transfer details: " + (CFG.nexloraPhone||'') + "','success')";
+  $("waBtn").href = "https://wa.me/" + phoneDigits.replace(/^\+/, '') + "?text=" + encodeURIComponent("Hello, I would like to renew/upgrade my EduCore package for " + (CFG.school || "my school") + ".");
+
+  renderTrialBanner();
+  renderUpdatePage();
+  applyWatermark();
+}
+
+/* ===================== PACKAGE RESOLUTION ===================== */
+function getActivePackage(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = CFG.trialStart ? new Date(CFG.trialStart) : null;
+  const end = CFG.trialEnd ? new Date(CFG.trialEnd) : null;
+  if(start && end){
+    start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+    if(today >= start && today <= end){
+      return "trial";
+    }
+  }
+  return (CFG.package || "starter").toLowerCase();
+}
+
+function trialDaysRemaining(){
+  if(!CFG.trialEnd) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(CFG.trialEnd); end.setHours(0,0,0,0);
+  const diff = Math.ceil((end - today) / (1000*60*60*24));
+  return diff;
+}
+
+function termEnded(){
+  if(!CFG.termEnd) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(CFG.termEnd); end.setHours(0,0,0,0);
+  return today > end;
+}
+
+function applyWatermark(){
+  const pkg = getActivePackage();
+  $("watermark").style.display = (pkg === "starter") ? "block" : "none";
+}
+
+function renderTrialBanner(){
+  const banner = $("trialBanner");
+  const pkg = getActivePackage();
+
+  if(pkg !== "trial"){
+    if(termEnded()){
+      banner.style.display = "flex";
+      banner.className = "trialBanner danger";
+      banner.innerHTML = "⛔ Term has ended. Please renew your package to continue using EduCore. <a onclick=\"goPage('page-update', document.querySelector('[data-page=page-update]'))\" href='javascript:void(0)'>Renew Now →</a>";
+    } else {
+      banner.style.display = "none";
+    }
+    return;
+  }
+
+  const days = trialDaysRemaining();
+  banner.style.display = "flex";
+  if(days === null){
+    banner.style.display = "none";
+    return;
+  }
+  if(days < 0){
+    banner.className = "trialBanner danger";
+    banner.innerHTML = "⛔ Your free trial has expired. Upgrade now to keep using EduCore. <a onclick=\"goPage('page-update', document.querySelector('[data-page=page-update]'))\" href='javascript:void(0)'>Upgrade →</a>";
+  } else if(days <= 3){
+    banner.className = "trialBanner danger";
+    banner.innerHTML = "🔴 Only " + days + " day(s) left on your free trial! <a onclick=\"goPage('page-update', document.querySelector('[data-page=page-update]'))\" href='javascript:void(0)'>Upgrade Now →</a>";
+  } else if(days <= 7){
+    banner.className = "trialBanner warn";
+    banner.innerHTML = "🟠 " + days + " day(s) left on your free trial. <a onclick=\"goPage('page-update', document.querySelector('[data-page=page-update]'))\" href='javascript:void(0)'>Upgrade →</a>";
+  } else {
+    banner.className = "trialBanner gold";
+    banner.innerHTML = "✨ Free Trial Active — " + days + " day(s) remaining with full premium access. <a onclick=\"goPage('page-update', document.querySelector('[data-page=page-update]'))\" href='javascript:void(0)'>Manage Plan →</a>";
+  }
+}
+
+/* ===================== GVIZ DATA LOADING ===================== */
+async function fetchGviz(sheetName){
+  const url = "https://docs.google.com/spreadsheets/d/" + CFG.sheetId + "/gviz/tq?tqx=out:json&sheet=" + encodeURIComponent(sheetName);
+  const res = await fetch(url);
+  const text = await res.text();
+  const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+  const json = JSON.parse(jsonStr);
+  const rows = [];
+  if(!json.table || !json.table.rows) return rows;
+  json.table.rows.forEach(row => {
+    const r = [];
+    (row.c || []).forEach(cell => {
+      if(cell === null || cell === undefined){
+        r.push("");
+      } else if(cell.f !== undefined){
+        r.push(cell.f);
+      } else {
+        r.push(cell.v);
+      }
+    });
+    rows.push(r);
+  });
+  return rows;
+}
+
+function isHeaderRow(r){
+  if(!r || r.length === 0) return true;
+  const first = String(r[0] || "").trim().toUpperCase();
+  return first === "" || first === "ID" || first === "NAME" || first === "STUDENTID" || first === "EXPENSEID";
+}
+
+async function loadAllData(){
+  try{
+    const results = await Promise.all([
+      fetchGviz("students").catch(()=>[]),
+      fetchGviz("workers").catch(()=>[]),
+      fetchGviz("stafflog").catch(()=>[]),
+      fetchGviz("payments").catch(()=>[]),
+      fetchGviz("expenses").catch(()=>[]),
+      fetchGviz("requirements").catch(()=>[])
+    ]);
+
+    const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw, requirementsRaw] = results;
+
+    // STUDENTS
+    DATA.students = studentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => ({
+      id: String(r[0] || "").trim(),
+      name: String(r[1] || "").trim(),
+      class: String(r[2] || "").trim(),
+      parent: String(r[3] || "").trim(),
+      phone: String(r[4] || "").trim(),
+      termFee: parseFloat(r[5]) || 0,
+      paid: parseFloat(r[6]) || 0,
+      english: parseFloat(r[7]) || 0,
+      math: parseFloat(r[8]) || 0,
+      science: parseFloat(r[9]) || 0,
+      sst: parseFloat(r[10]) || 0,
+      pin: String(r[11] || "").trim(),
+      contact: String(r[12] || "").trim(),
+      itemsBrought: parseFloat(r[13]) || 0,
+      status: String(r[14] || "").trim()
+    }));
+
+    // WORKERS
+    DATA.workers = workersRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => ({
+      id: String(r[0] || "").trim(),
+      name: String(r[1] || "").trim(),
+      role: String(r[2] || "").trim(),
+      phone: String(r[3] || "").trim(),
+      contact: String(r[4] || "").trim(),
+      payType: String(r[5] || "").trim(),
+      amount: parseFloat(r[6]) || 0,
+      startDate: String(r[7] || "").trim(),
+      status: String(r[8] || "").trim(),
+      category: String(r[9] || "").trim()
+    }));
+
+    // STAFFLOG -- assume columns: Name, Role, Action, Date, Time
+    DATA.stafflog = stafflogRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
+      name: String(r[0] || "").trim(),
+      role: String(r[1] || "").trim(),
+      action: String(r[2] || "").trim(),
+      date: String(r[3] || "").trim(),
+      time: String(r[4] || "").trim()
+    }));
+
+    // PAYMENTS TODAY
+    const today = todayStr();
+    let paidToday = 0;
+    paymentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").forEach(r => {
+      const d = normalizeDate(r[5]);
+      if(d === today){
+        paidToday += parseFloat(r[3]) || 0;
+      }
+    });
+    DATA.paymentsToday = paidToday;
+
+    // EXPENSES TODAY
+    let spentToday = 0;
+    expensesRaw.filter(r => !isHeaderRow(r) && r[0] !== "").forEach(r => {
+      const d = normalizeDate(r[4]);
+      if(d === today){
+        spentToday += parseFloat(r[3]) || 0;
+      }
+    });
+    DATA.expensesToday = spentToday;
+
+    // REQUIREMENTS -- columns: CLASS, ITEM1-6
+    DATA.requirements = requirementsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
+      class: String(r[0] || "").trim(),
+      items: [r[1], r[2], r[3], r[4], r[5], r[6]]
+        .map(v => String(v || "").trim())
+        .filter(v => v !== "")
+    }));
+
+    renderAll();
+  }catch(e){
+    console.error("Failed to load data", e);
+    showToast("Could not load data. Check your connection.", "warning");
+    renderAll();
+  }
+}
+
+/* ===================== RENDER: DASHBOARD ===================== */
+function renderAll(){
+  renderStatGrid();
+  renderFeeProgress();
+  renderPayroll();
+  renderClassFeeChart();
+  renderSubjectPerfChart();
+  renderReportsTable();
+  renderAnalysisPage();
+  renderWorkers();
+  renderPayrollSummary();
+  renderActivityLog();
+  renderRequirementsList();
+  renderRequirementsStatus();
+  $("dateBadge").textContent = new Date().toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+}
+
+function renderStatGrid(){
+  const stu = DATA.students;
+  const wks = DATA.workers;
+  let totalPaid = 0, totalBalance = 0;
+  stu.forEach(s => {
+    totalPaid += s.paid;
+    totalBalance += Math.max(s.termFee - s.paid, 0);
+  });
+  const activeWorkers = wks.filter(w => (w.status || "").toLowerCase() !== "inactive").length;
+
+  const stats = [
+    {label:"Students Enrolled", val: stu.length, cls:"blue", sub:"Total active students"},
+    {label:"Fees Collected", val: fmtMoney(totalPaid), cls:"green", sub:"This term"},
+    {label:"Outstanding Fees", val: fmtMoney(totalBalance), cls:"red", sub:"Balance remaining"},
+    {label:"Active Workers", val: activeWorkers, cls:"blue", sub: wks.length + " total on record"},
+    {label:"Paid Today", val: fmtMoney(DATA.paymentsToday), cls:"green", sub: todayStr()},
+    {label:"Spent Today", val: fmtMoney(DATA.expensesToday), cls:"orange", sub: todayStr()}
+  ];
+
+  $("statGrid").innerHTML = stats.map(s => `
+    <div class="statCard ${s.cls}">
+      <div class="slabel">${s.label}</div>
+      <div class="sval">${s.val}</div>
+      <div class="ssub">${s.sub}</div>
+    </div>
+  `).join("");
+}
+
+function renderFeeProgress(){
+  const stu = DATA.students;
+  let totalFee = 0, totalPaid = 0;
+  stu.forEach(s => { totalFee += s.termFee; totalPaid += s.paid; });
+  const totalBalance = Math.max(totalFee - totalPaid, 0);
+  const rate = totalFee > 0 ? Math.round((totalPaid / totalFee) * 100) : 0;
+
+  $("feeProgressFill").style.width = Math.min(rate,100) + "%";
+  $("feeProgressFill").textContent = rate + "%";
+  $("feeCollectedLbl").textContent = "Collected: " + fmtMoney(totalPaid);
+  $("feeOutstandingLbl").textContent = "Outstanding: " + fmtMoney(totalBalance);
+}
+
+function renderPayroll(){
+  let total = 0;
+  DATA.workers.forEach(w => {
+    if((w.status || "").toLowerCase() !== "inactive"){
+      total += w.amount;
+    }
+  });
+  $("totalPayrollVal").textContent = fmtMoney(total);
+  $("payrollSub").textContent = "Sum of salaries for " + DATA.workers.filter(w=>(w.status||"").toLowerCase() !== "inactive").length + " active worker(s) (per their pay frequency)";
+}
+
+function renderBarChart(containerId, items, colorClass){
+  const container = $(containerId);
+  if(!items || items.length === 0){
+    container.innerHTML = '<div class="empty">No data available</div>';
+    return;
+  }
+  const max = Math.max(...items.map(i => i.value), 1);
+  container.innerHTML = items.map(i => {
+    const heightPct = Math.max((i.value / max) * 100, 2);
+    return `
+      <div class="barCol">
+        <div class="barVal">${i.display !== undefined ? i.display : i.value}</div>
+        <div class="bar ${colorClass || ''}" style="height:${heightPct}%;"></div>
+        <div class="barLabel">${i.label}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderClassFeeChart(){
+  const classMap = {};
+  DATA.students.forEach(s => {
+    const cls = s.class || "Unknown";
+    if(!classMap[cls]) classMap[cls] = 0;
+    classMap[cls] += s.paid;
+  });
+  const items = Object.keys(classMap).sort().map(cls => ({
+    label: cls,
+    value: classMap[cls],
+    display: (classMap[cls] >= 1000) ? Math.round(classMap[cls]/1000)+"K" : classMap[cls]
+  }));
+  renderBarChart("classFeeChart", items, "green");
+}
+
+function renderSubjectPerfChart(){
+  const stu = DATA.students;
+  if(stu.length === 0){ renderBarChart("subjectPerfChart", [], ""); return; }
+  const subjects = [
+    {key:'english', label:'English'},
+    {key:'math', label:'Math'},
+    {key:'science', label:'Science'},
+    {key:'sst', label:'SST'}
+  ];
+  const items = subjects.map(sub => {
+    const total = stu.reduce((acc,s) => acc + (s[sub.key] || 0), 0);
+    const avg = Math.round(total / stu.length);
+    return {label: sub.label, value: avg, display: avg};
+  });
+  renderBarChart("subjectPerfChart", items, "blue");
+}
+
+/* ===================== STUDENT REPORTS TABLE ===================== */
+function renderReportsTable(){
+  const tbody = $("reportsBody");
+  if(DATA.students.length === 0){
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">No student data available</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DATA.students.map(s => {
+    const avg = Math.round((s.english + s.math + s.science + s.sst) / 4);
+    const grade = gradeFor(avg);
+    const balance = s.termFee - s.paid;
+    let feeStatus, feeClass;
+    if(balance <= 0){ feeStatus = "Paid"; feeClass = "green"; }
+    else if(s.paid > 0){ feeStatus = "Partial"; feeClass = "orange"; }
+    else { feeStatus = "Owing"; feeClass = "red"; }
+
+    return `
+      <tr onclick="openStudentModal('${s.id.replace(/'/g, "\\'")}')">
+        <td>
+          <div class="studentCell">
+            <div class="avatar">${initials(s.name)}</div>
+            <div>
+              <div>${s.name}</div>
+              <div class="sid">ID: ${s.id}</div>
+            </div>
+          </div>
+        </td>
+        <td>${s.class}</td>
+        <td>${s.english}</td>
+        <td>${s.math}</td>
+        <td>${s.science}</td>
+        <td>${s.sst}</td>
+        <td><b>${avg}%</b></td>
+        <td><span class="badge ${grade === 'A' ? 'green' : grade === 'B' ? 'blue' : grade === 'C' ? 'orange' : 'red'}">${grade}</span></td>
+        <td><span class="badge ${feeClass}">${feeStatus}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+/* ===================== STUDENT PROFILE MODAL ===================== */
+function openStudentModal(id){
+  const s = DATA.students.find(x => x.id === id);
+  if(!s) return;
+
+  $("modalAvatar").textContent = initials(s.name);
+  $("modalName").textContent = s.name;
+  $("modalId").textContent = "ID: " + s.id;
+  $("modalClassBadge").textContent = "Class " + s.class;
+
+  const balance = s.termFee - s.paid;
+  let feeStatus, feeClass;
+  if(balance <= 0){ feeStatus = "Paid"; feeClass = "green"; }
+  else if(s.paid > 0){ feeStatus = "Partial"; feeClass = "orange"; }
+  else { feeStatus = "Owing"; feeClass = "red"; }
+  $("modalFeeBadge").textContent = feeStatus;
+  $("modalFeeBadge").className = "badge " + feeClass;
+
+  const avg = Math.round((s.english + s.math + s.science + s.sst) / 4);
+  const grade = gradeFor(avg);
+  $("modalGradeBadge").textContent = "Grade " + grade;
+  $("modalGradeBadge").className = "badge " + (grade === 'A' ? 'green' : grade === 'B' ? 'blue' : grade === 'C' ? 'orange' : 'red');
+
+  $("modalFee").textContent = fmtMoney(s.termFee);
+  $("modalPaid").textContent = fmtMoney(s.paid);
+  $("modalBalance").textContent = fmtMoney(Math.max(balance,0));
+
+  const subjects = [
+    {label:'English', score:s.english},
+    {label:'Math', score:s.math},
+    {label:'Science', score:s.science},
+    {label:'SST', score:s.sst}
+  ];
+  $("modalResultsGrid").innerHTML = subjects.map(sub => `
+    <div class="resultBox">
+      <span class="rsub">${sub.label}</span>
+      <span class="rscore">${sub.score}% (${gradeFor(sub.score)})</span>
+    </div>
+  `).join("");
+
+  $("modalAverage").textContent = avg + "% (" + grade + ")";
+
+  // Requirements section
+  const req = getClassRequirements(s.class);
+  if(!req || req.items.length === 0){
+    $("modalRequirements").innerHTML = '<div class="empty" style="padding:14px;">No requirements list set for this class</div>';
+  } else {
+    const total = req.items.length;
+    const brought = Math.min(s.itemsBrought, total);
+    let statusLabel, statusClass;
+    if(brought >= total){ statusLabel = "Complete"; statusClass = "green"; }
+    else if(brought > 0){ statusLabel = "Partial"; statusClass = "orange"; }
+    else { statusLabel = "Missing"; statusClass = "red"; }
+
+    $("modalRequirements").innerHTML = `
+      <div class="resultBox" style="margin-bottom:8px;">
+        <span class="rsub">Items Brought</span>
+        <span class="rscore">${brought} / ${total} <span class="badge ${statusClass}" style="margin-left:6px;">${statusLabel}</span></span>
+      </div>
+      <div class="resultBox">
+        <span class="rsub">Required for ${s.class}</span>
+        <span class="rscore">${req.items.join(", ")}</span>
+      </div>
+    `;
+  }
+
+  $("studentModal").classList.add("show");
+}
+
+function closeModal(){
+  $("studentModal").classList.remove("show");
+}
+
+/* ===================== STUDENT SEARCH ===================== */
+function onStudentSearch(){
+  const q = $("studentSearch").value.trim().toLowerCase();
+  const results = $("searchResults");
+  if(!q){
+    results.classList.remove("show");
+    results.innerHTML = "";
+    return;
+  }
+  const matches = DATA.students.filter(s =>
+    s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
+  ).slice(0, 8);
+
+  if(matches.length === 0){
+    results.innerHTML = '<div class="sres">No matching students</div>';
+  } else {
+    results.innerHTML = matches.map(s => `
+      <div class="sres" onclick="selectSearchResult('${s.id.replace(/'/g, "\\'")}')">
+        <b>${s.name}</b> — ${s.class} <span style="color:#999;">(ID: ${s.id})</span>
+      </div>
+    `).join("");
+  }
+  results.classList.add("show");
+}
+
+function selectSearchResult(id){
+  $("searchResults").classList.remove("show");
+  $("studentSearch").value = "";
+  openStudentModal(id);
+}
+
+document.addEventListener("click", function(e){
+  if(!e.target.closest(".searchWrap")){
+    $("searchResults").classList.remove("show");
+  }
+});
+
+/* ===================== FULL ANALYSIS PAGE ===================== */
+function renderAnalysisPage(){
+  const pkg = getActivePackage();
+  const allowed = (pkg === "pro" || pkg === "premium" || pkg === "trial");
+
+  if(!allowed){
+    $("analysisLocked").style.display = "block";
+    $("analysisContent").style.display = "none";
+    return;
+  }
+  $("analysisLocked").style.display = "none";
+  $("analysisContent").style.display = "block";
+
+  const stu = DATA.students;
+  if(stu.length === 0){
+    $("highlightGrid").innerHTML = '<div class="empty" style="grid-column:1/-1;">No student data available</div>';
+    renderBarChart("classRankChart", [], "");
+    renderBarChart("gradeDistChart", [], "");
+    renderBarChart("subjectPassChart", [], "");
+    $("schoolSummaryBody").innerHTML = '<tr><td colspan="5" class="empty">No data</td></tr>';
+    return;
+  }
+
+  // compute averages
+  const withAvg = stu.map(s => ({
+    ...s,
+    avg: (s.english + s.math + s.science + s.sst) / 4
+  }));
+
+  // Best student
+  const best = withAvg.reduce((a,b) => b.avg > a.avg ? b : a);
+
+  // Subject averages
+  const subjects = [
+    {key:'english', label:'English'},
+    {key:'math', label:'Math'},
+    {key:'science', label:'Science'},
+    {key:'sst', label:'SST'}
+  ];
+  const subjAvgs = subjects.map(sub => ({
+    label: sub.label,
+    avg: withAvg.reduce((acc,s) => acc + s[sub.key], 0) / withAvg.length
+  }));
+  const bestSubject = subjAvgs.reduce((a,b) => b.avg > a.avg ? b : a);
+  const weakestSubject = subjAvgs.reduce((a,b) => b.avg < a.avg ? b : a);
+
+  // Pass rate (avg >= 40 considered pass per grading: D is lowest pass)
+  const passCount = withAvg.filter(s => s.avg >= 40).length;
+  const passRate = Math.round((passCount / withAvg.length) * 100);
+
+  // Highlight cards
+  $("highlightGrid").innerHTML = `
+    <div class="highlightCard">
+      <div class="hic">🏆</div>
+      <div class="hlabel">Best Student</div>
+      <div class="hval">${best.name}</div>
+      <div class="hsub">${Math.round(best.avg)}% average · Class ${best.class}</div>
+    </div>
+    <div class="highlightCard">
+      <div class="hic">📘</div>
+      <div class="hlabel">Best Subject</div>
+      <div class="hval">${bestSubject.label}</div>
+      <div class="hsub">${Math.round(bestSubject.avg)}% average</div>
+    </div>
+    <div class="highlightCard">
+      <div class="hic">✅</div>
+      <div class="hlabel">School Pass Rate</div>
+      <div class="hval">${passRate}%</div>
+      <div class="hsub">${passCount} of ${withAvg.length} students</div>
+    </div>
+    <div class="highlightCard">
+      <div class="hic">📉</div>
+      <div class="hlabel">Weakest Subject</div>
+      <div class="hval">${weakestSubject.label}</div>
+      <div class="hsub">${Math.round(weakestSubject.avg)}% average</div>
+    </div>
+  `;
+
+  // Class performance ranking
+  const classMap = {};
+  withAvg.forEach(s => {
+    const cls = s.class || "Unknown";
+    if(!classMap[cls]) classMap[cls] = {total:0, count:0};
+    classMap[cls].total += s.avg;
+    classMap[cls].count += 1;
+  });
+  const classItems = Object.keys(classMap).sort().map(cls => {
+    const avg = Math.round(classMap[cls].total / classMap[cls].count);
+    return {label: cls, value: avg, display: avg + "%"};
+  }).sort((a,b) => b.value - a.value);
+  renderBarChart("classRankChart", classItems, "blue");
+
+  // Grade distribution
+  const gradeCounts = {A:0,B:0,C:0,D:0};
+  withAvg.forEach(s => { gradeCounts[gradeFor(s.avg)]++; });
+  const gradeItems = [
+    {label:'Grade A', value: gradeCounts.A, display: gradeCounts.A},
+    {label:'Grade B', value: gradeCounts.B, display: gradeCounts.B},
+    {label:'Grade C', value: gradeCounts.C, display: gradeCounts.C},
+    {label:'Grade D', value: gradeCounts.D, display: gradeCounts.D}
+  ];
+  renderBarChart("gradeDistChart", gradeItems, "green");
+
+  // Subject pass rates (>=40)
+  const subjPassItems = subjects.map(sub => {
+    const passers = withAvg.filter(s => s[sub.key] >= 40).length;
+    const rate = Math.round((passers / withAvg.length) * 100);
+    return {label: sub.label, value: rate, display: rate + "%"};
+  });
+  renderBarChart("subjectPassChart", subjPassItems, "orange");
+
+  // School summary table
+  $("schoolSummaryBody").innerHTML = `
+    <tr>
+      <td>${withAvg.length}</td>
+      <td>${passRate}%</td>
+      <td>${best.name} (${best.class})</td>
+      <td>${bestSubject.label}</td>
+      <td>${weakestSubject.label}</td>
+    </tr>
+  `;
+}
+
+/* ===================== APPROVE PAYROLL PAGE ===================== */
+function getApprovals(){
+  try{
+    const raw = localStorage.getItem(APPROVALS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    return {};
+  }
+}
+function saveApprovals(obj){
+  localStorage.setItem(APPROVALS_KEY, JSON.stringify(obj));
+}
+
+function renderWorkers(){
+  const grid = $("workerGrid");
+  const q = ($("workerSearch") ? $("workerSearch").value.trim().toLowerCase() : "");
+  const approvals = getApprovals();
+
+  let workers = DATA.workers;
+  if(q){
+    workers = workers.filter(w =>
+      w.name.toLowerCase().includes(q) || w.role.toLowerCase().includes(q)
+    );
+  }
+
+  if(workers.length === 0){
+    grid.innerHTML = '<div class="empty">No workers found</div>';
+    return;
+  }
+
+  grid.innerHTML = workers.map(w => {
+    const isApproved = !!approvals[w.id];
+    return `
+      <div class="workerCard">
+        <div class="wtop">
+          <div>
+            <h4>${w.name}</h4>
+            <div class="wrole">${w.role}</div>
+          </div>
+          <span class="badge blue">${w.category || 'General'}</span>
+        </div>
+        <div class="wamt">${fmtMoney(w.amount)}</div>
+        <div class="wfreq">Paid ${w.payType || 'Monthly'}</div>
+        ${isApproved
+          ? `<button class="approveBtn approved" disabled>✅ Approved</button>`
+          : `<button class="approveBtn pending" onclick="approveWorker('${w.id.replace(/'/g, "\\'")}','${w.name.replace(/'/g, "\\'")}')">Tap to Approve</button>`
+        }
+      </div>
+    `;
+  }).join("");
+}
+
+function approveWorker(id, name){
+  if(!confirm("Approve payroll payment for " + name + "? This will be saved permanently.")){
+    return;
+  }
+  const approvals = getApprovals();
+  approvals[id] = true;
+  saveApprovals(approvals);
+  showToast(name + "'s payroll approved ✅", "success");
+  renderWorkers();
+  renderPayrollSummary();
+}
+
+function renderPayrollSummary(){
+  const tbody = $("payrollSummaryBody");
+  const approvals = getApprovals();
+
+  if(DATA.workers.length === 0){
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">No worker data available</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = DATA.workers.map(w => {
+    const isApproved = !!approvals[w.id];
+    return `
+      <tr>
+        <td>${w.name}</td>
+        <td>${w.role}</td>
+        <td>${w.category || 'General'}</td>
+        <td>${w.payType || 'Monthly'}</td>
+        <td>${fmtMoney(w.amount)}</td>
+        <td><span class="badge ${isApproved ? 'green' : 'orange'}">${isApproved ? 'Approved' : 'Pending'}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+/* ===================== STAFF ACTIVITY LOG ===================== */
+function renderActivityLog(){
+  const tbody = $("activityBody");
+  if(DATA.stafflog.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No activity recorded yet</td></tr>';
+    return;
+  }
+  const reversed = [...DATA.stafflog].reverse();
+  tbody.innerHTML = reversed.map(log => `
+    <tr>
+      <td>${log.name}</td>
+      <td>${log.role}</td>
+      <td>${log.action}</td>
+      <td>${log.date}</td>
+      <td>${log.time}</td>
+    </tr>
+  `).join("");
+}
+
+/* ===================== REQUIREMENTS PAGE ===================== */
+function getClassRequirements(className){
+  return DATA.requirements.find(r => r.class.toLowerCase() === (className || "").toLowerCase());
+}
+
+function renderRequirementsList(){
+  const tbody = $("requirementsListBody");
+  if(DATA.requirements.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No requirements data available</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DATA.requirements.map(r => {
+    const cells = [0,1,2,3,4,5].map(i => `<td>${r.items[i] || '—'}</td>`).join("");
+    return `<tr><td><b>${r.class}</b></td>${cells}</tr>`;
+  }).join("");
+}
+
+function renderRequirementsStatus(){
+  const tbody = $("requirementsStatusBody");
+  const q = ($("reqStudentSearch") ? $("reqStudentSearch").value.trim().toLowerCase() : "");
+
+  let students = DATA.students;
+  if(q){
+    students = students.filter(s =>
+      s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
+    );
+  }
+
+  if(students.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No students found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = students.map(s => {
+    const req = getClassRequirements(s.class);
+    const total = req ? req.items.length : 0;
+    const brought = Math.min(s.itemsBrought, total);
+
+    let statusLabel, statusClass;
+    if(total === 0){
+      statusLabel = "No List"; statusClass = "gray";
+    } else if(brought >= total){
+      statusLabel = "Complete"; statusClass = "green";
+    } else if(brought > 0){
+      statusLabel = "Partial"; statusClass = "orange";
+    } else {
+      statusLabel = "Missing"; statusClass = "red";
+    }
+
+    return `
+      <tr onclick="openStudentModal('${s.id.replace(/'/g, "\\'")}')">
+        <td>
+          <div class="studentCell">
+            <div class="avatar">${initials(s.name)}</div>
+            <div>
+              <div>${s.name}</div>
+              <div class="sid">ID: ${s.id}</div>
+            </div>
+          </div>
+        </td>
+        <td>${s.class}</td>
+        <td>${total > 0 ? (req.items.join(", ")) : '—'}</td>
+        <td>${total > 0 ? (brought + " / " + total) : '—'}</td>
+        <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+function renderUpdatePage(){
+  const pkg = getActivePackage();
+  $("pkgNameVal").textContent = pkg.charAt(0).toUpperCase() + pkg.slice(1);
+
+  const days = trialDaysRemaining();
+  if(pkg === "trial" && days !== null){
+    $("trialDaysVal").textContent = days >= 0 ? days + " days" : "Expired";
+  } else {
+    $("trialDaysVal").textContent = "—";
+  }
+
+  let termInfo = "—";
+  if(CFG.termStart && CFG.termEnd){
+    const start = new Date(CFG.termStart).toLocaleDateString('en-GB', {day:'2-digit', month:'short'});
+    const end = new Date(CFG.termEnd).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+    termInfo = (CFG.term || "Term") + ": " + start + " – " + end;
+  } else if(CFG.term){
+    termInfo = CFG.term;
+  }
+  $("termInfoVal").textContent = termInfo;
+
+  // Package comparison
+  const packages = [
+    {key:'starter', name:'Starter', features:['SMS Notifications', 'Basic Features', 'Watermark Shown']},
+    {key:'pro', name:'Pro', features:['WhatsApp Results', 'Parent Portal', 'Export CSV', 'Full Analytics']},
+    {key:'premium', name:'Premium', features:['Everything in Pro', 'No Watermark', 'Priority Support']}
+  ];
+  $("pkgComparisonGrid").innerHTML = packages.map(p => `
+    <div class="pkgCard ${pkg === p.key ? 'current' : ''}">
+      <h4>${p.name} ${pkg === p.key ? '⭐' : ''}</h4>
+      <ul>${p.features.map(f => `<li>${f}</li>`).join("")}</ul>
+    </div>
+  `).join("");
+}
+
+/* ===================== NAVIGATION ===================== */
+function goPage(pageId, el){
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  $(pageId).classList.add("active");
+
+  document.querySelectorAll(".navlist a").forEach(a => a.classList.remove("active"));
+  if(el) el.classList.add("active");
+
+  const titles = {
+    "page-dashboard": "Dashboard",
+    "page-reports": "Student Reports",
+    "page-analysis": "Full Analysis",
+    "page-payroll": "Approve Payroll",
+    "page-activity": "Staff Activity",
+    "page-requirements": "Requirements",
+    "page-update": "Software Update"
+  };
+  $("pageTitle").textContent = titles[pageId] || "Dashboard";
+
+  // close sidebar on mobile after nav
+  $("sidebar").classList.remove("open");
+  $("sidebarOverlay").classList.remove("show");
+}
+
+function toggleSidebar(){
+  $("sidebar").classList.toggle("open");
+  $("sidebarOverlay").classList.toggle("show");
+}
+
+function onTermChange(){
+  currentTerm = $("termSelect").value;
+  $("reportTermLbl").textContent = currentTerm === "T1" ? "Term 1" : currentTerm === "T2" ? "Term 2" : "Term 3";
+  // Note: data structure currently reflects current term's columns from sheet directly.
+  showToast("Viewing " + $("reportTermLbl").textContent + " data", "success");
+}
+
+/* ===================== APP ENTRY ===================== */
+async function enterApp(){
+  $("loginScreen").style.display = "none";
+  $("appScreen").classList.add("show");
+
+  $("sbAvatar").textContent = initials(currentUser.name);
+  $("sbUserName").textContent = currentUser.name;
+
+  await loadConfig();
+
+  $("statGrid").innerHTML = '<div class="loadingRow" style="grid-column:1/-1;">Loading dashboard…</div>';
+  await loadAllData();
+}
+
+/* ===================== INIT ===================== */
+window.addEventListener("DOMContentLoaded", () => {
+  // Pre-load config for branding on login screen
+  loadConfig();
+
+  // Enter key support
+  $("si_pass").addEventListener("keydown", e => { if(e.key === "Enter") signIn(); });
+  $("cr_pass2").addEventListener("keydown", e => { if(e.key === "Enter") createAccount(); });
+});
+</script>
+</body>
+</html>
