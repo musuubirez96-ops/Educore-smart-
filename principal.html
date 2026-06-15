@@ -375,6 +375,7 @@ table tbody tr:hover{background:var(--bg);}
       <li><a data-page="page-analysis" onclick="goPage('page-analysis',this)"><span class="ic">📈</span> Full Analysis</a></li>
       <li><a data-page="page-payroll" onclick="goPage('page-payroll',this)"><span class="ic">💰</span> Approve Payroll</a></li>
       <li><a data-page="page-activity" onclick="goPage('page-activity',this)"><span class="ic">🕒</span> Staff Activity</a></li>
+      <li><a data-page="page-requirements" onclick="goPage('page-requirements',this)"><span class="ic">🎒</span> Requirements</a></li>
       <li><a data-page="page-update" onclick="goPage('page-update',this)"><span class="ic">⚙️</span> Software Update</a></li>
     </ul>
     <button class="signoutBtn" onclick="signOut()">Sign Out</button>
@@ -520,7 +521,41 @@ table tbody tr:hover{background:var(--bg);}
         </div>
       </div>
 
-      <!-- PAGE 6: SOFTWARE UPDATE -->
+      <!-- PAGE 6: REQUIREMENTS -->
+      <div class="page" id="page-requirements">
+        <div class="cardBox">
+          <h3>Class Requirements List</h3>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr><th>Class</th><th>Item 1</th><th>Item 2</th><th>Item 3</th><th>Item 4</th><th>Item 5</th><th>Item 6</th></tr>
+              </thead>
+              <tbody id="requirementsListBody">
+                <tr class="loadingRow"><td colspan="7">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="cardBox">
+          <h3>Student Requirements Status</h3>
+          <div class="filterBar">
+            <input type="text" id="reqStudentSearch" placeholder="🔎 Search student by name or ID..." oninput="renderRequirementsStatus()">
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr><th>Student</th><th>Class</th><th>Required Items</th><th>Brought</th><th>Status</th></tr>
+              </thead>
+              <tbody id="requirementsStatusBody">
+                <tr class="loadingRow"><td colspan="5">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE 7: SOFTWARE UPDATE -->
       <div class="page" id="page-update">
         <div class="grid3">
           <div class="statCard accent">
@@ -594,6 +629,8 @@ table tbody tr:hover{background:var(--bg);}
       <span>Overall Average</span>
       <span id="modalAverage">0%</span>
     </div>
+    <h3 style="font-size:.95rem;margin:14px 0 8px;">Requirements</h3>
+    <div id="modalRequirements"></div>
   </div>
 </div>
 
@@ -628,6 +665,7 @@ let DATA = {
   students: [],
   workers: [],
   stafflog: [],
+  requirements: [],
   paymentsToday: 0,
   expensesToday: 0
 };
@@ -969,10 +1007,11 @@ async function loadAllData(){
       fetchGviz("workers").catch(()=>[]),
       fetchGviz("stafflog").catch(()=>[]),
       fetchGviz("payments").catch(()=>[]),
-      fetchGviz("expenses").catch(()=>[])
+      fetchGviz("expenses").catch(()=>[]),
+      fetchGviz("requirements").catch(()=>[])
     ]);
 
-    const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw] = results;
+    const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw, requirementsRaw] = results;
 
     // STUDENTS
     DATA.students = studentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => ({
@@ -989,6 +1028,7 @@ async function loadAllData(){
       sst: parseFloat(r[10]) || 0,
       pin: String(r[11] || "").trim(),
       contact: String(r[12] || "").trim(),
+      itemsBrought: parseFloat(r[13]) || 0,
       status: String(r[14] || "").trim()
     }));
 
@@ -1036,6 +1076,14 @@ async function loadAllData(){
     });
     DATA.expensesToday = spentToday;
 
+    // REQUIREMENTS -- columns: CLASS, ITEM1-6
+    DATA.requirements = requirementsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
+      class: String(r[0] || "").trim(),
+      items: [r[1], r[2], r[3], r[4], r[5], r[6]]
+        .map(v => String(v || "").trim())
+        .filter(v => v !== "")
+    }));
+
     renderAll();
   }catch(e){
     console.error("Failed to load data", e);
@@ -1056,6 +1104,8 @@ function renderAll(){
   renderWorkers();
   renderPayrollSummary();
   renderActivityLog();
+  renderRequirementsList();
+  renderRequirementsStatus();
   $("dateBadge").textContent = new Date().toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
 }
 
@@ -1243,6 +1293,30 @@ function openStudentModal(id){
   `).join("");
 
   $("modalAverage").textContent = avg + "% (" + grade + ")";
+
+  // Requirements section
+  const req = getClassRequirements(s.class);
+  if(!req || req.items.length === 0){
+    $("modalRequirements").innerHTML = '<div class="empty" style="padding:14px;">No requirements list set for this class</div>';
+  } else {
+    const total = req.items.length;
+    const brought = Math.min(s.itemsBrought, total);
+    let statusLabel, statusClass;
+    if(brought >= total){ statusLabel = "Complete"; statusClass = "green"; }
+    else if(brought > 0){ statusLabel = "Partial"; statusClass = "orange"; }
+    else { statusLabel = "Missing"; statusClass = "red"; }
+
+    $("modalRequirements").innerHTML = `
+      <div class="resultBox" style="margin-bottom:8px;">
+        <span class="rsub">Items Brought</span>
+        <span class="rscore">${brought} / ${total} <span class="badge ${statusClass}" style="margin-left:6px;">${statusLabel}</span></span>
+      </div>
+      <div class="resultBox">
+        <span class="rsub">Required for ${s.class}</span>
+        <span class="rscore">${req.items.join(", ")}</span>
+      </div>
+    `;
+  }
 
   $("studentModal").classList.add("show");
 }
@@ -1518,7 +1592,74 @@ function renderActivityLog(){
   `).join("");
 }
 
-/* ===================== SOFTWARE UPDATE PAGE ===================== */
+/* ===================== REQUIREMENTS PAGE ===================== */
+function getClassRequirements(className){
+  return DATA.requirements.find(r => r.class.toLowerCase() === (className || "").toLowerCase());
+}
+
+function renderRequirementsList(){
+  const tbody = $("requirementsListBody");
+  if(DATA.requirements.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No requirements data available</td></tr>';
+    return;
+  }
+  tbody.innerHTML = DATA.requirements.map(r => {
+    const cells = [0,1,2,3,4,5].map(i => `<td>${r.items[i] || '—'}</td>`).join("");
+    return `<tr><td><b>${r.class}</b></td>${cells}</tr>`;
+  }).join("");
+}
+
+function renderRequirementsStatus(){
+  const tbody = $("requirementsStatusBody");
+  const q = ($("reqStudentSearch") ? $("reqStudentSearch").value.trim().toLowerCase() : "");
+
+  let students = DATA.students;
+  if(q){
+    students = students.filter(s =>
+      s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
+    );
+  }
+
+  if(students.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No students found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = students.map(s => {
+    const req = getClassRequirements(s.class);
+    const total = req ? req.items.length : 0;
+    const brought = Math.min(s.itemsBrought, total);
+
+    let statusLabel, statusClass;
+    if(total === 0){
+      statusLabel = "No List"; statusClass = "gray";
+    } else if(brought >= total){
+      statusLabel = "Complete"; statusClass = "green";
+    } else if(brought > 0){
+      statusLabel = "Partial"; statusClass = "orange";
+    } else {
+      statusLabel = "Missing"; statusClass = "red";
+    }
+
+    return `
+      <tr onclick="openStudentModal('${s.id.replace(/'/g, "\\'")}')">
+        <td>
+          <div class="studentCell">
+            <div class="avatar">${initials(s.name)}</div>
+            <div>
+              <div>${s.name}</div>
+              <div class="sid">ID: ${s.id}</div>
+            </div>
+          </div>
+        </td>
+        <td>${s.class}</td>
+        <td>${total > 0 ? (req.items.join(", ")) : '—'}</td>
+        <td>${total > 0 ? (brought + " / " + total) : '—'}</td>
+        <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
 function renderUpdatePage(){
   const pkg = getActivePackage();
   $("pkgNameVal").textContent = pkg.charAt(0).toUpperCase() + pkg.slice(1);
@@ -1568,6 +1709,7 @@ function goPage(pageId, el){
     "page-analysis": "Full Analysis",
     "page-payroll": "Approve Payroll",
     "page-activity": "Staff Activity",
+    "page-requirements": "Requirements",
     "page-update": "Software Update"
   };
   $("pageTitle").textContent = titles[pageId] || "Dashboard";
