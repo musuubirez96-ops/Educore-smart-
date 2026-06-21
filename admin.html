@@ -240,6 +240,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* TABLE (scrollable) */
 .tw{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);background:var(--card);}
 .tw table{width:100%;min-width:600px;border-collapse:collapse;}
+.tw-compact table{min-width:0;table-layout:fixed;}
+.tw-compact th,.tw-compact td{padding:9px 7px;}
+@media(max-width:600px){.hide-mobile{display:none;}}
 .tw thead tr{background:var(--bg);}
 .tw th{padding:9px 12px;text-align:left;font-size:0.63rem;font-weight:700;color:var(--text-dim);letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
 .tw td{padding:9px 12px;font-size:0.79rem;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
@@ -601,6 +604,38 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <!-- ═══ REQUIREMENTS ═══ -->
       <div id="page-requirements" class="page">
         <div class="fc">
+          <div class="fct">➕ Add / Edit Class Requirements</div>
+          <div class="fg">
+            <div class="ff"><label>Class</label><select id="rqClass"><option>P.1A</option><option>P.1B</option><option>P.2A</option><option>P.2B</option><option>P.3A</option><option>P.3B</option><option>P.3C</option><option>P.4A</option><option>P.4B</option><option>P.5A</option><option>P.5B</option><option>P.6A</option><option>P.6B</option><option>P.7A</option><option>P.7B</option></select></div>
+            <div class="ff"><label>Item 1</label><input type="text" id="rqI1" placeholder="e.g. School Uniform"/></div>
+            <div class="ff"><label>Item 2</label><input type="text" id="rqI2" placeholder="e.g. Broom"/></div>
+            <div class="ff"><label>Item 3</label><input type="text" id="rqI3" placeholder="optional"/></div>
+            <div class="ff"><label>Item 4</label><input type="text" id="rqI4" placeholder="optional"/></div>
+            <div class="ff"><label>Item 5</label><input type="text" id="rqI5" placeholder="optional"/></div>
+            <div class="ff"><label>Item 6</label><input type="text" id="rqI6" placeholder="optional"/></div>
+          </div>
+          <div class="fa">
+            <button class="btn boutline" onclick="clearReqForm()">Clear</button>
+            <button class="btn bdark" onclick="saveClassReq()">
+              <svg viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>Save Requirements
+            </button>
+          </div>
+        </div>
+        <div class="fc">
+          <div class="fct">✅ Quick Student Requirements Check</div>
+          <div class="fg">
+            <div class="ff full">
+              <label>Student Name or ID</label>
+              <input type="text" id="qrName" list="qrStuList" placeholder="Start typing a student's name..." oninput="qrAutoFill()" autocomplete="off"/>
+              <datalist id="qrStuList"></datalist>
+            </div>
+            <div class="ff"><label>Class</label><input type="text" id="qrClass" readonly placeholder="Auto-fills once matched"/></div>
+          </div>
+          <div class="fa">
+            <button class="btn bdark" onclick="qrOpenChecklist()">✅ Open Requirements Checklist</button>
+          </div>
+        </div>
+        <div class="fc">
           <div class="fct">🎒 Class Requirements List</div>
           <div class="tw"><table>
             <thead><tr><th>Class</th><th>Item 1</th><th>Item 2</th><th>Item 3</th><th>Item 4</th><th>Item 5</th><th>Item 6</th></tr></thead>
@@ -610,12 +645,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="fc">
           <div class="fct">✅ Student Requirements Tracker</div>
           <div style="margin-bottom:12px"><input type="text" id="reqSearch" placeholder="🔎 Search student by name or ID..." oninput="rReq()" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:9px 11px;font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none;"/></div>
-          <div class="tw"><table>
-            <thead><tr><th>Student</th><th>Class</th><th>Required Items</th><th>Status</th><th>Action</th></tr></thead>
+          <div class="tw tw-compact"><table>
+            <thead><tr><th style="width:34%">Student</th><th style="width:14%">Class</th><th class="hide-mobile">Required Items</th><th style="width:30%">Status</th><th style="width:22%">Action</th></tr></thead>
             <tbody id="reqStuBody"><tr class="lr"><td colspan="5">Loading...</td></tr></tbody>
           </table></div>
         </div>
       </div>
+
 
       <!-- ═══ COMMUNICATIONS ═══ -->
       <div id="page-comms" class="page">
@@ -1138,7 +1174,7 @@ async function addStudent(){
   const s={id,name,cls:$('nClass').value,parent:$('nParent').value,phone:$('nPhone').value,cont:$('nCont').value,fee:parseFloat($('nFee').value)||0,paid:parseFloat($('nPaid').value)||0,pin:$('nPin').value||'0000',eng:parseFloat($('nEng').value)||0,math:parseFloat($('nMath').value)||0,sci:parseFloat($('nSci').value)||0,sst:parseFloat($('nSST').value)||0,status:'Active'};
   s.bal=s.fee-s.paid;
   stu.push(s);rStuList();updStats();clearStuForm();
-  toast(`✅ ${name} added!`);showPage('students',document.querySelector('[onclick="showPage(\'students\',this)"]'));
+  toast(`✅ ${name} added!`);showPage('students',null);
   try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'addStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin,contactType:s.cont})});}catch(e){}
 }
 function clearStuForm(){['nId','nName','nParent','nPhone','nFee','nPaid','nPin','nEng','nMath','nSci','nSST'].forEach(id=>$(id).value='');}
@@ -1264,7 +1300,7 @@ function rBal(){
   const tb=$('balBody');
   const owing=stu.filter(s=>s.bal>0&&s.status!=='Expelled').sort((a,b)=>b.bal-a.bal);
   if(!owing.length){tb.innerHTML='<tr class="lr"><td colspan="7" style="color:var(--green)">🎉 All students cleared fees!</td></tr>';return;}
-  tb.innerHTML=owing.map(s=>`<tr onclick="showPage('students',document.querySelector('[onclick=\\\"showPage(\\\'students\\\',this)\\\"]'));setTimeout(()=>selectStu('${s.id}'),100)">
+  tb.innerHTML=owing.map(s=>`<tr onclick="showPage('students',null);setTimeout(()=>selectStu('${s.id}'),100)">
     <td><div style="display:flex;align-items:center;gap:7px"><div class="li-av" style="background:${col(s.name)};width:28px;height:28px;font-size:0.65rem">${ini(s.name)}</div><b>${s.name}</b></div></td>
     <td><span class="sbdg sbdg-inactive">${s.cls}</span></td>
     <td>${s.parent}</td>
@@ -1331,15 +1367,74 @@ function rReqList(){
   if(!req.length){tb.innerHTML='<tr class="lr"><td colspan="7">No requirements set yet.</td></tr>';return;}
   tb.innerHTML=req.map(r=>{
     const cells=[0,1,2,3,4,5].map(i=>`<td>${r.items[i]||'—'}</td>`).join('');
-    return `<tr><td><strong>${r.cls}</strong></td>${cells}</tr>`;
+    return `<tr style="cursor:pointer" onclick="loadReqForEdit('${r.cls}')"><td><strong>${r.cls}</strong></td>${cells}</tr>`;
   }).join('');
+}
+
+function clearReqForm(){
+  $('rqClass').value='P.1A';
+  for(let i=1;i<=6;i++)$('rqI'+i).value='';
+}
+
+function loadReqForEdit(cls){
+  const r=getReqForClass(cls);if(!r)return;
+  $('rqClass').value=r.cls;
+  for(let i=1;i<=6;i++)$('rqI'+i).value=r.items[i-1]||'';
+  toast(`Editing requirements for ${cls}`);
+}
+
+async function saveClassReq(){
+  const cls=$('rqClass').value;
+  const items=[1,2,3,4,5,6].map(i=>$('rqI'+i).value.trim());
+  if(!items[0]){toast('⚠️ Please enter at least Item 1',false);return;}
+  const existing=req.find(r=>r.cls.toLowerCase()===cls.toLowerCase());
+  if(existing)existing.items=items;else req.push({cls,items});
+  rReqList();rReq();
+  toast(`✅ Requirements saved for ${cls}!`);
+  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateClassRequirements',cls,item1:items[0],item2:items[1],item3:items[2],item4:items[3],item5:items[4],item6:items[5]})});}
+  catch(e){toast('⚠️ Saved locally — will sync when connected',false);}
 }
 
 function getReqForClass(cls){return req.find(r=>r.cls.toLowerCase()===cls.toLowerCase())||null;}
 function getStuItems(id){return stuItems.find(x=>x.id===id)||null;}
 
+let qrLastOpened=null;
+function populateQrDatalist(){
+  const dl=$('qrStuList');if(!dl)return;
+  dl.innerHTML=stu.filter(s=>s.status!=='Expelled').map(s=>`<option value="${s.name} (${s.id})">`).join('');
+}
+
+function qrFindStudent(){
+  const val=$('qrName').value.trim();if(!val)return null;
+  const m=val.match(/\(([^)]+)\)\s*$/);
+  if(m){const byId=stu.find(x=>x.id===m[1]);if(byId)return byId;}
+  let s=stu.find(x=>x.id.toLowerCase()===val.toLowerCase());
+  if(s)return s;
+  s=stu.find(x=>x.name.toLowerCase()===val.toLowerCase());
+  return s||null;
+}
+
+function qrAutoFill(){
+  const s=qrFindStudent();
+  if(s){
+    $('qrClass').value=s.cls;
+    if(qrLastOpened!==s.id){qrLastOpened=s.id;openReqChecklist(s.id);}
+  }else{
+    $('qrClass').value='';
+    qrLastOpened=null;
+  }
+}
+
+function qrOpenChecklist(){
+  const s=qrFindStudent();
+  if(!s){toast('⚠️ Type or select a valid student first',false);return;}
+  qrLastOpened=s.id;
+  openReqChecklist(s.id);
+}
+
 function rReq(){
   const tb=$('reqStuBody');
+  populateQrDatalist();
   const q=($('reqSearch')||{value:''}).value.trim().toLowerCase();
   let list=stu.filter(s=>s.status!=='Expelled');
   if(q)list=list.filter(s=>s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q));
@@ -1347,12 +1442,12 @@ function rReq(){
   tb.innerHTML=list.map(s=>{
     const r=getReqForClass(s.cls);const si=getStuItems(s.id);
     if(!r)return `<tr><td>${s.name}</td><td>${s.cls}</td><td colspan="3" style="color:var(--text-dim)">No list for this class</td></tr>`;
-    const total=r.items.length;const broughtCount=si?si.brought.slice(0,total).filter(Boolean).length:0;
+    const total=r.items.filter(Boolean).length;const broughtCount=si?si.brought.slice(0,6).filter(Boolean).length:0;
     let badge,bcls;if(broughtCount>=total){badge='Complete';bcls='sbdg-active';}else if(broughtCount>0){badge='Partial';bcls='sbdg-suspended';}else{badge='Missing';bcls='sbdg-expelled';}
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:7px"><div class="li-av" style="background:${col(s.name)};width:26px;height:26px;font-size:0.62rem">${ini(s.name)}</div><b>${s.name}</b></div></td>
       <td>${s.cls}</td>
-      <td style="font-size:0.75rem;color:var(--text-dim);max-width:180px;white-space:normal">${r.items.join(', ')}</td>
+      <td class="hide-mobile" style="font-size:0.75rem;color:var(--text-dim);max-width:180px;white-space:normal">${r.items.filter(Boolean).join(', ')}</td>
       <td><span class="sbdg ${bcls}">${broughtCount}/${total} ${badge}</span></td>
       <td><button class="btn boutline" style="padding:4px 8px;font-size:0.69rem" onclick="openReqChecklist('${s.id}')">✏️ Update</button></td>
     </tr>`;
@@ -1362,17 +1457,17 @@ function rReq(){
 function openReqChecklist(id){
   const s=stu.find(x=>x.id===id);if(!s)return;
   const r=getReqForClass(s.cls);
-  if(!r||!r.items.length){toast('No requirements list for class '+s.cls,false);return;}
+  if(!r||!r.items.filter(Boolean).length){toast('No requirements list for class '+s.cls,false);return;}
   const si=getStuItems(s.id);
   $('reqMoTitle').textContent=`${s.name} — ${s.cls}`;
-  $('reqMoBody').innerHTML=r.items.map((item,i)=>`
+  $('reqMoBody').innerHTML=r.items.map((item,i)=>item?`
     <div class="req-check-item">
       <input type="checkbox" id="rc${i}" ${si&&si.brought[i]?'checked':''}>
       <label for="rc${i}">${item}</label>
-    </div>`).join('')+`
+    </div>`:'').join('')+`
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn boutline" onclick="closeMo('reqMo')">Cancel</button>
-      <button class="btn bdark" onclick="saveReqChecklist('${id}',${r.items.length})">💾 Save</button>
+      <button class="btn bdark" onclick="saveReqChecklist('${id}',6)">💾 Save</button>
     </div>`;
   $('reqMo').classList.add('open');
 }
