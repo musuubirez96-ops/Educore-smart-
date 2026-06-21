@@ -606,7 +606,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="fc">
           <div class="fct">➕ Add / Edit Class Requirements</div>
           <div class="fg">
-            <div class="ff"><label>Class</label><select id="rqClass"><option>P.1A</option><option>P.1B</option><option>P.2A</option><option>P.2B</option><option>P.3A</option><option>P.3B</option><option>P.3C</option><option>P.4A</option><option>P.4B</option><option>P.5A</option><option>P.5B</option><option>P.6A</option><option>P.6B</option><option>P.7A</option><option>P.7B</option></select></div>
+            <div class="ff"><label>Class</label><input type="text" id="rqClass" list="rqClassList" placeholder="Type or pick a class"/><datalist id="rqClassList"></datalist></div>
             <div class="ff"><label>Item 1</label><input type="text" id="rqI1" placeholder="e.g. School Uniform"/></div>
             <div class="ff"><label>Item 2</label><input type="text" id="rqI2" placeholder="e.g. Broom"/></div>
             <div class="ff"><label>Item 3</label><input type="text" id="rqI3" placeholder="optional"/></div>
@@ -1372,8 +1372,16 @@ function rReqList(){
 }
 
 function clearReqForm(){
-  $('rqClass').value='P.1A';
+  $('rqClass').value='';
   for(let i=1;i<=6;i++)$('rqI'+i).value='';
+}
+
+function populateRqClassList(){
+  const dl=$('rqClassList');if(!dl)return;
+  const fallback=['P.1A','P.1B','P.2A','P.2B','P.3A','P.3B','P.3C','P.4A','P.4B','P.5A','P.5B','P.6A','P.6B','P.7A','P.7B'];
+  const real=stu.map(s=>s.cls).filter(Boolean);
+  const all=[...new Set([...real,...fallback])].sort();
+  dl.innerHTML=all.map(c=>`<option value="${c}">`).join('');
 }
 
 function loadReqForEdit(cls){
@@ -1435,6 +1443,7 @@ function qrOpenChecklist(){
 function rReq(){
   const tb=$('reqStuBody');
   populateQrDatalist();
+  populateRqClassList();
   const q=($('reqSearch')||{value:''}).value.trim().toLowerCase();
   let list=stu.filter(s=>s.status!=='Expelled');
   if(q)list=list.filter(s=>s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q));
