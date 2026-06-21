@@ -301,6 +301,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .req-check-item{display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg);border-radius:9px;margin-bottom:7px;cursor:pointer;}
 .req-check-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;}
 .req-check-item label{font-weight:600;font-size:0.84rem;cursor:pointer;flex:1;}
+.req-check-item.checked{background:var(--green-pale);}
+.req-check-item.checked label{text-decoration:line-through;color:var(--text-dim);}
+.req-check-item .req-toggle{accent-color:var(--green);}
+.req-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.req-stat-box{background:var(--bg);border-radius:9px;padding:10px 6px;text-align:center;}
+.req-stat-val{font-family:'Fraunces',serif;font-size:1.3rem;color:var(--primary);font-weight:700;line-height:1.2;}
+.req-stat-lbl{font-size:0.58rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+.req-card{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.req-card.complete{border-left-color:var(--green);}
+.req-card.partial{border-left-color:var(--orange);}
+.req-card.missing{border-left-color:var(--red);}
+.req-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.req-card-name{font-weight:700;font-size:0.88rem;}
+.req-progress-track{background:var(--bg);border-radius:20px;height:6px;overflow:hidden;margin-top:10px;}
+.req-progress-fill{height:100%;border-radius:20px;transition:width .3s;}
+.req-progress-lbl{font-size:0.65rem;color:var(--text-dim);font-weight:600;margin-top:4px;}
 
 /* TOAST */
 #toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#fff;padding:11px 18px;border-radius:11px;font-size:0.82rem;font-weight:700;box-shadow:var(--shadow-lg);z-index:9000;display:none;max-width:88vw;animation:toastIn .3s ease;}
@@ -644,11 +660,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         </div>
         <div class="fc">
           <div class="fct">✅ Student Requirements Tracker</div>
+          <div class="req-stats" id="reqStatsRow"></div>
+          <div id="reqClassChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
           <div style="margin-bottom:12px"><input type="text" id="reqSearch" placeholder="🔎 Search student by name or ID..." oninput="rReq()" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:9px 11px;font-family:'DM Sans',sans-serif;font-size:0.82rem;outline:none;"/></div>
-          <div class="tw tw-compact"><table>
-            <thead><tr><th style="width:34%">Student</th><th style="width:14%">Class</th><th class="hide-mobile">Required Items</th><th style="width:30%">Status</th><th style="width:22%">Action</th></tr></thead>
-            <tbody id="reqStuBody"><tr class="lr"><td colspan="5">Loading...</td></tr></tbody>
-          </table></div>
+          <div id="reqStuBody"><p style="color:var(--text-dim);font-size:0.82rem;text-align:center;padding:20px">Loading...</p></div>
         </div>
       </div>
 
@@ -1403,7 +1418,8 @@ async function saveClassReq(){
   catch(e){toast('⚠️ Saved locally — will sync when connected',false);}
 }
 
-function getReqForClass(cls){return req.find(r=>r.cls.toLowerCase()===cls.toLowerCase())||null;}
+function gradeNum(cls){const m=String(cls||'').match(/\d+/);return m?m[0]:'';}
+function getReqForClass(cls){const g=gradeNum(cls);if(!g)return null;return req.find(r=>gradeNum(r.cls)===g)||null;}
 function getStuItems(id){return stuItems.find(x=>x.id===id)||null;}
 
 let qrLastOpened=null;
@@ -1440,27 +1456,77 @@ function qrOpenChecklist(){
   openReqChecklist(s.id);
 }
 
+let reqClassFilter='All';
+
+function reqStatBoxes(learners,fullyEquipped,itemsMissing){
+  return `<div class="req-stat-box"><div class="req-stat-val">${learners}</div><div class="req-stat-lbl">Learners</div></div>
+    <div class="req-stat-box"><div class="req-stat-val">${fullyEquipped}</div><div class="req-stat-lbl">Fully Equipped</div></div>
+    <div class="req-stat-box"><div class="req-stat-val">${itemsMissing}</div><div class="req-stat-lbl">Items Missing</div></div>`;
+}
+
+function setReqClassFilter(label){reqClassFilter=label;rReq();}
+
+async function toggleReqItem(id,idx){
+  let si=stuItems.find(x=>x.id===id);
+  if(!si){si={id,brought:[false,false,false,false,false,false]};stuItems.push(si);}
+  si.brought[idx]=!si.brought[idx];
+  rReq();
+  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:si.brought[0],item2:si.brought[1],item3:si.brought[2],item4:si.brought[3],item5:si.brought[4],item6:si.brought[5]})});}
+  catch(e){toast('⚠️ Saved locally — will sync when connected',false);}
+}
+
 function rReq(){
-  const tb=$('reqStuBody');
   populateQrDatalist();
   populateRqClassList();
+  const activeList=stu.filter(s=>s.status!=='Expelled');
+
+  const grades=[...new Set(activeList.map(s=>gradeNum(s.cls)).filter(Boolean))].sort((a,b)=>a-b);
+  $('reqClassChips').innerHTML=['All',...grades.map(g=>'P.'+g)].map(label=>
+    `<span class="fchip ${label===reqClassFilter?'active':''}" onclick="setReqClassFilter('${label}')">${label}</span>`
+  ).join('');
+
   const q=($('reqSearch')||{value:''}).value.trim().toLowerCase();
-  let list=stu.filter(s=>s.status!=='Expelled');
+  let list=activeList;
+  if(reqClassFilter!=='All')list=list.filter(s=>gradeNum(s.cls)===reqClassFilter.replace('P.',''));
   if(q)list=list.filter(s=>s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q));
-  if(!list.length){tb.innerHTML='<tr class="lr"><td colspan="5">No students found.</td></tr>';return;}
-  tb.innerHTML=list.map(s=>{
+
+  const body=$('reqStuBody');
+  if(!list.length){
+    body.innerHTML='<p style="color:var(--text-dim);font-size:0.82rem;text-align:center;padding:20px">No students found.</p>';
+    $('reqStatsRow').innerHTML=reqStatBoxes(0,0,0);
+    return;
+  }
+
+  let fullyEquipped=0,itemsMissing=0;
+  body.innerHTML=list.map(s=>{
     const r=getReqForClass(s.cls);const si=getStuItems(s.id);
-    if(!r)return `<tr><td>${s.name}</td><td>${s.cls}</td><td colspan="3" style="color:var(--text-dim)">No list for this class</td></tr>`;
-    const total=r.items.filter(Boolean).length;const broughtCount=si?si.brought.slice(0,6).filter(Boolean).length:0;
-    let badge,bcls;if(broughtCount>=total){badge='Complete';bcls='sbdg-active';}else if(broughtCount>0){badge='Partial';bcls='sbdg-suspended';}else{badge='Missing';bcls='sbdg-expelled';}
-    return `<tr>
-      <td><div style="display:flex;align-items:center;gap:7px"><div class="li-av" style="background:${col(s.name)};width:26px;height:26px;font-size:0.62rem">${ini(s.name)}</div><b>${s.name}</b></div></td>
-      <td>${s.cls}</td>
-      <td class="hide-mobile" style="font-size:0.75rem;color:var(--text-dim);max-width:180px;white-space:normal">${r.items.filter(Boolean).join(', ')}</td>
-      <td><span class="sbdg ${bcls}">${broughtCount}/${total} ${badge}</span></td>
-      <td><button class="btn boutline" style="padding:4px 8px;font-size:0.69rem" onclick="openReqChecklist('${s.id}')">✏️ Update</button></td>
-    </tr>`;
+    if(!r||!r.items.filter(Boolean).length){
+      return `<div class="req-card">
+        <div class="req-card-head"><div class="req-card-name">${s.name}</div><span class="sbdg sbdg-inactive">${s.cls}</span></div>
+        <p style="color:var(--text-dim);font-size:0.78rem;margin:0">No requirements list set for this class yet.</p>
+      </div>`;
+    }
+    const total=r.items.filter(Boolean).length;
+    const brought=si?si.brought:[false,false,false,false,false,false];
+    const broughtCount=r.items.reduce((acc,item,i)=>item&&brought[i]?acc+1:acc,0);
+    fullyEquipped+=broughtCount>=total?1:0;
+    itemsMissing+=total-broughtCount;
+    const state=broughtCount>=total?'complete':broughtCount>0?'partial':'missing';
+    const pct=total?Math.round(broughtCount/total*100):0;
+    const fillColor=state==='complete'?'var(--green)':state==='partial'?'var(--orange)':'var(--red)';
+    const itemsHtml=r.items.map((item,i)=>!item?'':`
+      <div class="req-check-item ${brought[i]?'checked':''}" onclick="toggleReqItem('${s.id}',${i})">
+        <input type="checkbox" class="req-toggle" ${brought[i]?'checked':''} readonly>
+        <label>${item}</label>
+      </div>`).join('');
+    return `<div class="req-card ${state}">
+      <div class="req-card-head"><div class="req-card-name">${s.name}</div><span class="sbdg sbdg-inactive">${s.cls}</span></div>
+      ${itemsHtml}
+      <div class="req-progress-track"><div class="req-progress-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+      <div class="req-progress-lbl">${broughtCount}/${total} brought</div>
+    </div>`;
   }).join('');
+  $('reqStatsRow').innerHTML=reqStatBoxes(list.length,fullyEquipped,itemsMissing);
 }
 
 function openReqChecklist(id){
