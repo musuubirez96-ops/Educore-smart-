@@ -1593,8 +1593,14 @@ function renderActivityLog(){
 }
 
 /* ===================== REQUIREMENTS PAGE ===================== */
+function gradeNum(cls){
+  const m = String(cls || "").match(/\d+/);
+  return m ? m[0] : "";
+}
 function getClassRequirements(className){
-  return DATA.requirements.find(r => r.class.toLowerCase() === (className || "").toLowerCase());
+  const g = gradeNum(className);
+  if(!g) return undefined;
+  return DATA.requirements.find(r => gradeNum(r.class) === g);
 }
 
 function renderRequirementsList(){
