@@ -1008,10 +1008,11 @@ async function loadAllData(){
       fetchGviz("stafflog").catch(()=>[]),
       fetchGviz("payments").catch(()=>[]),
       fetchGviz("expenses").catch(()=>[]),
-      fetchGviz("requirements").catch(()=>[])
+      fetchGviz("requirements").catch(()=>[]),
+      fetchGviz("studentitems").catch(()=>[])
     ]);
 
-    const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw, requirementsRaw] = results;
+    const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw, requirementsRaw, stuItemsRaw] = results;
 
     // STUDENTS
     DATA.students = studentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => ({
@@ -1082,6 +1083,12 @@ async function loadAllData(){
       items: [r[1], r[2], r[3], r[4], r[5], r[6]]
         .map(v => String(v || "").trim())
         .filter(v => v !== "")
+    }));
+
+    // STUDENT ITEMS -- columns: StudentID, Item1-6 (TRUE/FALSE)
+    DATA.stuItems = stuItemsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
+      id: String(r[0] || "").trim(),
+      brought: [r[1],r[2],r[3],r[4],r[5],r[6]].map(v => String(v||"").trim().toUpperCase() === "TRUE")
     }));
 
     renderAll();
@@ -1300,7 +1307,8 @@ function openStudentModal(id){
     $("modalRequirements").innerHTML = '<div class="empty" style="padding:14px;">No requirements list set for this class</div>';
   } else {
     const total = req.items.length;
-    const brought = Math.min(s.itemsBrought, total);
+    const si = (DATA.stuItems||[]).find(x => x.id === s.id);
+    const brought = si ? si.brought.slice(0,total).filter(Boolean).length : 0;
     let statusLabel, statusClass;
     if(brought >= total){ statusLabel = "Complete"; statusClass = "green"; }
     else if(brought > 0){ statusLabel = "Partial"; statusClass = "orange"; }
@@ -1634,7 +1642,8 @@ function renderRequirementsStatus(){
   tbody.innerHTML = students.map(s => {
     const req = getClassRequirements(s.class);
     const total = req ? req.items.length : 0;
-    const brought = Math.min(s.itemsBrought, total);
+    const si = (DATA.stuItems||[]).find(x => x.id === s.id);
+    const brought = total > 0 ? (si ? si.brought.slice(0,total).filter(Boolean).length : 0) : 0;
 
     let statusLabel, statusClass;
     if(total === 0){
