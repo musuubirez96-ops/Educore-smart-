@@ -656,7 +656,7 @@ function tick(){
   document.getElementById('pTime').value=nt();
   document.getElementById('eDt').value=nd();
 }
-function nd(){return new Date().toLocaleDateString('en-UG');}
+function nd(){const d=new Date();const yyyy=d.getFullYear();const mm=String(d.getMonth()+1).padStart(2,'0');const dd=String(d.getDate()).padStart(2,'0');return yyyy+'-'+mm+'-'+dd;}
 function nt(){return new Date().toLocaleTimeString('en-UG',{hour:'2-digit',minute:'2-digit'});}
 
 // ── FETCH FROM SHEETS ──
@@ -741,10 +741,16 @@ async function loadPayHistory(){
     }));
     // Combine with today's payments
     const combined=[...todayPays];
+    const today=nd();
     fromSheet.forEach(p=>{
       if(!combined.find(x=>x.id===p.id&&x.date===p.date&&x.amt===p.amt))combined.push(p);
     });
     allPays=combined;
+    // repopulate todayPays from sheet so stats survive logout/login
+    const sessionIds=new Set(todayPays.map(p=>p.id+p.date+p.amt));
+    fromSheet.filter(p=>p.date===today).forEach(p=>{
+      if(!sessionIds.has(p.id+p.date+p.amt))todayPays.push(p);
+    });
     rHist();
   }catch(e){console.log('Payments error',e);}
 }
