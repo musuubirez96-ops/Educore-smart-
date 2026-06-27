@@ -707,14 +707,21 @@ async function loadWks(){
 async function loadExps(){
   try{
     const rows=await fetchGviz('expenses');
+    const parseTime=function(v){
+      const s=String(v||'');
+      const m=s.match(/Date\([\d,]+,(\d+),(\d+),/);
+      if(m)return String(m[1]).padStart(2,'0')+':'+String(m[2]).padStart(2,'0');
+      return s;
+    };
     const fromSheet=rows.filter(r=>r[1]&&r[1]!=='Description'&&r[1]!=='DESCRIPTION').map(r=>({
       expId:String(r[0]||''),
       desc:String(r[1]||''),
       cat:String(r[2]||'Other'),
       amt:parseFloat(r[3])||0,
       date:String(r[4]||''),
-      approved:String(r[5]||'—'),
-      by:String(r[6]||''),
+      time:parseTime(r[5]),
+      approved:String(r[6]||'—'),
+      by:String(r[7]||''),
     }));
     // Merge sheet expenses with locally added ones (avoid duplicates)
     const localDescs=exps.map(e=>e.desc+e.date);
