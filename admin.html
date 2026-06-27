@@ -916,6 +916,16 @@ async function loadConfig(){
 }
 
 function applyBranding(){
+  // Apply colors from config.json dynamically
+  const r=document.documentElement;
+  const p=CFG.primaryColor||'#1d9e8c';
+  const a=CFG.accentColor||'#d4a96a';
+  r.style.setProperty('--primary',p);
+  r.style.setProperty('--primary-light',p+'cc');
+  r.style.setProperty('--primary-pale',p+'18');
+  r.style.setProperty('--accent',a);
+  r.style.setProperty('--accent-pale',a+'22');
+  if(CFG.bgColor)r.style.setProperty('--bg',CFG.bgColor);
   $('authSchoolName').textContent=CFG.school||'EduCore';
   $('authMotto').textContent=CFG.motto||'School Management System';
   $('sideName').textContent=CFG.school||'School Name';
@@ -1356,10 +1366,10 @@ function sendMsg(channel,type){
   const targets=type==='balance'?stu.filter(s=>s.bal>0):type==='thankyou'?stu.filter(s=>s.bal<=0&&s.fee>0):stu;
   if(!targets.length){toast('No recipients found',false);return;}
   targets.forEach(s=>{
-    let msg='';const school=CFG.school||'School';
-    if(type==='balance')msg=`Dear ${s.parent}, your child ${s.name} (${s.cls}) has an outstanding fee balance of UGX ${fm(s.bal)} for Term ${term}. Kindly clear at your earliest convenience.\n– ${school}`;
-    else if(type==='thankyou')msg=`Dear ${s.parent}, your child ${s.name} (${s.cls}) has CLEARED all fees for Term ${term}. Thank you! 🎉\n– ${school}`;
-    else msg=`Dear ${s.parent}, Term ${term} has ended. ${s.bal>0?'Balance: UGX '+fm(s.bal)+' — please clear.':'Fees cleared ✅'}\n– ${school}`;
+    let msg='';const school=CFG.school||'EduCore';const sig=`– EduCore by Nexlora Digital Systems`;
+    if(type==='balance')msg=`Dear ${s.parent}, your child ${s.name} (${s.cls}) has an outstanding fee balance of UGX ${fm(s.bal)} for Term ${term}. Kindly clear at your earliest convenience.\n${sig}`;
+    else if(type==='thankyou')msg=`Dear ${s.parent}, your child ${s.name} (${s.cls}) has CLEARED all fees for Term ${term}. Thank you! 🎉\n${sig}`;
+    else msg=`Dear ${s.parent}, Term ${term} has ended. ${s.bal>0?'Balance: UGX '+fm(s.bal)+' — please clear.':'Fees cleared ✅'}\n${sig}`;
     const ph=String(s.phone).replace(/\s/g,'');
     if(channel==='wa'&&hasFeature('whatsapp'))window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
     else window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');
@@ -1369,9 +1379,9 @@ function sendMsg(channel,type){
 }
 
 function getRec(){const t=$('mTo').value,c=$('mCls').value;if(t==='owing')return stu.filter(s=>s.bal>0);if(t==='paid')return stu.filter(s=>s.bal<=0&&s.fee>0);if(t==='class')return stu.filter(s=>s.cls===c);return stu;}
-function sendCustom(){const txt=$('mTxt').value.trim();if(!txt){toast('⚠️ Please type a message',false);return;}const r=getRec();if(!r.length){toast('No recipients',false);return;}const school=CFG.school||'School';r.forEach(s=>{const msg=`Dear ${s.parent},\n\n${txt}\n\n– ${school}`;const ph=String(s.phone).replace(/\s/g,'');window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');});logMsg('Custom','SMS',r.length);toast(`✅ Sent to ${r.length} parent(s)`);}
-function previewMsg(){const r=getRec();if(!r.length){toast('No recipients',false);return;}const s=r[0],txt=$('mTxt').value||'[Your message]';alert(`PREVIEW (${r.length} recipients)\n\nDear ${s.parent},\n\n${txt}\n\n– ${CFG.school||'School'}`);}
-function contParent(id){const s=stu.find(x=>x.id===id);if(!s)return;const msg=`Dear ${s.parent}, this is a message from ${CFG.school||'School'} regarding ${s.name} (${s.cls}). Balance: UGX ${fm(s.bal)}.`;const ph=String(s.phone).replace(/\s/g,'');if(hasFeature('whatsapp')&&s.cont==='WhatsApp')window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');else window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');}
+function sendCustom(){const txt=$('mTxt').value.trim();if(!txt){toast('⚠️ Please type a message',false);return;}const r=getRec();if(!r.length){toast('No recipients',false);return;}const sig=`– EduCore by Nexlora Digital Systems`;r.forEach(s=>{const msg=`Dear ${s.parent},\n\n${txt}\n\n${sig}`;const ph=String(s.phone).replace(/\s/g,'');window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');});logMsg('Custom','SMS',r.length);toast(`✅ Sent to ${r.length} parent(s)`);}
+function previewMsg(){const r=getRec();if(!r.length){toast('No recipients',false);return;}const s=r[0],txt=$('mTxt').value||'[Your message]';alert(`PREVIEW (${r.length} recipients)\n\nDear ${s.parent},\n\n${txt}\n\n– EduCore by Nexlora Digital Systems`);}
+function contParent(id){const s=stu.find(x=>x.id===id);if(!s)return;const msg=`Dear ${s.parent}, this is a message from EduCore regarding ${s.name} (${s.cls}). Balance: UGX ${fm(s.bal)}.`;const ph=String(s.phone).replace(/\s/g,'');if(hasFeature('whatsapp')&&s.cont==='WhatsApp')window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');else window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');}
 function logMsg(type,channel,cnt){const tb=$('mLog');const row=`<tr><td><span class="sbdg sbdg-inactive">${type}</span></td><td><span class="sbdg ${channel==='SMS'?'sbdg-suspended':'sbdg-active'}">${channel}</span></td><td>${cnt} parents</td><td>${nt()}</td><td>${cu}</td></tr>`;if(tb.querySelector('.lr'))tb.innerHTML='';tb.insertAdjacentHTML('afterbegin',row);}
 
 // ═══════════════════════════════════════════════════
