@@ -870,8 +870,15 @@ async function loadConfig(){
 }
 
 function applyConfig(){
-  document.documentElement.style.setProperty('--primary', CFG.primaryColor || '#2d2d2d');
-  document.documentElement.style.setProperty('--accent', CFG.accentColor || '#f0a500');
+  const r=document.documentElement;
+  const p=CFG.primaryColor||'#1d9e8c';
+  const a=CFG.accentColor||'#d4a96a';
+  r.style.setProperty('--primary',p);
+  r.style.setProperty('--primary-light',p+'cc');
+  r.style.setProperty('--primary-pale',p+'18');
+  r.style.setProperty('--accent',a);
+  r.style.setProperty('--accent-pale',a+'22');
+  if(CFG.bgColor)r.style.setProperty('--bg',CFG.bgColor);
 
   $("loginSchoolName").textContent = CFG.school || "EduCore";
   $("loginBadge").src = CFG.badge || "";
