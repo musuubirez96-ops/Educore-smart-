@@ -621,7 +621,7 @@ function doLogin(){
     document.getElementById('eBy').value=cu;
     term=CFG.term||2;
     tick();setInterval(tick,1000);
-    loadStu();loadWks();
+    loadStu();loadWks();loadPayHistory();loadExps();
   }else{
     tries++;const rem=MAX-tries;
     if(tries>=MAX){
