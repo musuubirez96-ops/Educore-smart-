@@ -517,8 +517,15 @@ async function loadConfig(){
 }
 
 function applyBranding(){
-  document.documentElement.style.setProperty('--primary',CFG.primaryColor||'#2d2d2d');
-  document.documentElement.style.setProperty('--accent',CFG.accentColor||'#f0a500');
+  const r=document.documentElement;
+  const p=CFG.primaryColor||'#1d9e8c';
+  const a=CFG.accentColor||'#d4a96a';
+  r.style.setProperty('--primary',p);
+  r.style.setProperty('--primary-light',p+'cc');
+  r.style.setProperty('--primary-pale',p+'18');
+  r.style.setProperty('--accent',a);
+  r.style.setProperty('--accent-pale',a+'22');
+  if(CFG.bgColor)r.style.setProperty('--bg',CFG.bgColor);
   document.getElementById('authSchoolName').textContent=CFG.school||'EduCore';
   document.getElementById('authMotto').textContent=CFG.motto||'School Management System';
   document.getElementById('sideName').textContent=CFG.school||'School';
@@ -898,10 +905,10 @@ async function recordPayment(){
   rTodayPay();updStats();
   // Send receipt
   if(s){
-    const school=CFG.school||'School';
+    const school=CFG.school||'EduCore';const sig=`– EduCore by Nexlora Digital Systems`;
     const msg=newBal===0?
-      `Dear ${s.parent}, UGX ${fm(amt)} received for ${name} (${cls}). 🎉 ALL FEES CLEARED! Thank you!\n– ${school}`:
-      `Dear ${s.parent}, UGX ${fm(amt)} received for ${name} (${cls}). Remaining balance: UGX ${fm(newBal)}. Thank you.\n– ${school}`;
+      `Dear ${s.parent}, UGX ${fm(amt)} received for ${name} (${cls}). 🎉 ALL FEES CLEARED! Thank you!\n${sig}`:
+      `Dear ${s.parent}, UGX ${fm(amt)} received for ${name} (${cls}). Remaining balance: UGX ${fm(newBal)}. Thank you.\n${sig}`;
     const ph=String(s.phone).replace(/\s/g,'');
     if(hasFeature('whatsapp')&&s.cont==='WhatsApp'){
       window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
@@ -1067,8 +1074,7 @@ function confirmAdv(id){
 }
 
 function sendWorkerMsg(w,amt,type){
-  const school=CFG.school||'School';
-  const msg=encodeURIComponent(`Dear ${w.name}, your ${type} of UGX ${fm(amt)} has been processed on ${nd()}. Thank you.\n– ${school}`);
+  const msg=encodeURIComponent(`Dear ${w.name}, your ${type} of UGX ${fm(amt)} has been processed on ${nd()}. Thank you.\n– EduCore by Nexlora Digital Systems`);
   const ph=String(w.phone).replace(/\s/g,'');
   if(hasFeature('whatsapp')&&w.cont==='WhatsApp'){
     window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${msg}`,'_blank');
