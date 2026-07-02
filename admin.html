@@ -471,6 +471,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
       <!-- ═══ STUDENTS ═══ -->
       <div id="page-students" class="page active">
+        <div style="text-align:right;margin-bottom:8px">
+          <button class="btn boutline" onclick="exportStudentsCSV()" style="font-size:0.72rem;padding:5px 11px">
+            📥 ${hasFeature('exportCSV')?'Export Students CSV':'🔒 Pro: Export CSV'}
+          </button>
+        </div>
         <div class="srow" id="stuStats">
           <div class="sc"><div class="st"><div class="sic dk"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div></div><div class="sv" id="stTotal">—</div><div class="sl">Total Students</div></div>
           <div class="sc"><div class="st"><div class="sic g"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div></div><div class="sv" id="stPaid">—</div><div class="sl">Fully Paid</div></div>
@@ -524,7 +529,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             <div class="ff"><label>Student ID</label><input type="text" id="nId" placeholder="Auto-generated if empty"/></div>
             <div class="ff"><label>Full Name</label><input type="text" id="nName" placeholder="Student full name"/></div>
             <div class="ff"><label>Class</label>
-              <select id="nClass"><option>P.1A</option><option>P.1B</option><option>P.2A</option><option>P.2B</option><option>P.3A</option><option>P.3B</option><option>P.3C</option><option>P.4A</option><option>P.4B</option><option>P.5A</option><option>P.5B</option><option>P.6A</option><option>P.6B</option><option>P.7A</option><option>P.7B</option></select>
+              <select id="nClass"></select>
             </div>
             <div class="ff"><label>Parent/Guardian</label><input type="text" id="nParent" placeholder="Parent full name"/></div>
             <div class="ff"><label>Phone</label><input type="tel" id="nPhone" placeholder="07XXXXXXXX"/></div>
@@ -674,8 +679,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="fc">
           <div class="fct"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>Custom Message</div>
           <div class="fg">
-            <div class="ff full"><label>Send To</label><select id="mTo" onchange="document.getElementById('clsWrap').style.display=this.value==='class'?'block':'none'"><option value="all">All Parents</option><option value="owing">Owing Parents Only</option><option value="paid">Fully Paid Parents</option><option value="class">Specific Class</option></select></div>
-            <div class="ff full" id="clsWrap" style="display:none"><label>Class</label><select id="mCls"><option>P.1A</option><option>P.2A</option><option>P.3A</option><option>P.4A</option><option>P.5A</option><option>P.6A</option><option>P.7A</option></select></div>
+            <div class="ff"><label>Channel</label><select id="mChannel"><option value="sms">📱 SMS</option><option value="wa">💬 WhatsApp ${hasFeature('whatsapp')?'':'(🔒 Pro)'}</option></select></div>
+            <div class="ff"><label>Send To</label><select id="mTo" onchange="document.getElementById('clsWrap').style.display=(this.value==='class'||this.value==='level')?'block':'none'"><option value="all">All Parents</option><option value="owing">Outstanding Balance</option><option value="paid">Fully Paid Parents</option><option value="partial">Partially Paid Parents</option><option value="class">Specific Class</option><option value="level">Specific Academic Level</option></select></div>
+            <div class="ff full" id="clsWrap" style="display:none"><label>Class / Level</label><select id="mCls"></select></div>
             <div class="ff full"><label>Message</label><textarea id="mTxt" rows="3" style="background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:9px;font-family:'DM Sans',sans-serif;font-size:0.82rem;width:100%;outline:none;resize:vertical" placeholder="Type your message..."></textarea></div>
           </div>
           <div class="fa">
@@ -904,7 +910,45 @@ function resolvePackage(){
   if(now>=trialStart&&now<=trialEnd){EFFECTIVE_PKG='premium';return'trial';}
   EFFECTIVE_PKG=CFG.package||'starter';return EFFECTIVE_PKG;
 }
-function hasFeature(f){const p=EFFECTIVE_PKG;return p==='premium'||(p==='pro'&&['whatsapp','exportCSV','parentPortal','fullAnalytics'].includes(f));}
+function exportStudentsCSV(){
+  if(!hasFeature('exportCSV')){toast('🔒 Upgrade to Pro to export CSV',false);return;}
+  const rows=[['ID','Name','Class','Parent','Phone','Term Fee','Paid','Balance','Status']];
+  stu.forEach(s=>rows.push([s.id,s.name,s.cls,s.parent,s.phone,s.fee,s.paid,s.bal,s.status]));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='students_'+nd().replace(/\//g,'-')+'.csv';a.click();
+}
+function generateAcademicLevels(){
+  const type=(CFG.institutionType||'primary').toLowerCase();
+  if(CFG.customLevels&&Array.isArray(CFG.customLevels)&&CFG.customLevels.length){
+    return CFG.customLevels;
+  }
+  if(type==='kindergarten'){
+    return['Baby Class','Middle Class','Top Class'];
+  }
+  if(type==='secondary'){
+    const out=[];for(let i=1;i<=6;i++){out.push('S'+i+'A');out.push('S'+i+'B');}return out;
+  }
+  if(type==='tertiary'){
+    const out=[];for(let y=1;y<=5;y++){out.push('Year '+y+' Sem 1');out.push('Year '+y+' Sem 2');}return out;
+  }
+  // default: primary
+  const out=[];for(let i=1;i<=7;i++){out.push('P.'+i+'A');out.push('P.'+i+'B');}
+  if(!CFG.institutionType)out.splice(5,0,'P.3C'); // preserve original Eden P.3C option for backward compat
+  return out;
+}
+
+function populateClassDropdowns(){
+  const levels=generateAcademicLevels();
+  const opts=levels.map(l=>`<option>${l}</option>`).join('');
+  if($('nClass'))$('nClass').innerHTML=opts;
+  if($('mCls'))$('mCls').innerHTML=opts;
+}
+function hasFeature(f){
+  const p=EFFECTIVE_PKG;
+  if(p==='premium'||p==='trial')return true;
+  if(p==='pro')return['whatsapp','exportCSV','parentPortal','fullAnalytics','results','whatsappCampaigns'].includes(f)||['students','workers','expenses','feeTracking','sms','basicAnalytics'].includes(f);
+  return['students','workers','expenses','feeTracking','sms','basicAnalytics'].includes(f);
+}
 function trialDaysLeft(){return Math.ceil((new Date(CFG.trialEnd)-new Date())/(1000*60*60*24));}
 function termDaysLeft(){return Math.ceil((new Date(CFG.termEnd)-new Date())/(1000*60*60*24));}
 function isExpired(){const pkg=resolvePackage();if(pkg==='trial')return false;return new Date()>new Date(CFG.termEnd);}
@@ -912,7 +956,7 @@ function isExpired(){const pkg=resolvePackage();if(pkg==='trial')return false;re
 async function loadConfig(){
   try{const res=await fetch('./config.json?t='+Date.now());CFG=await res.json();}
   catch(e){CFG={school:"Your School Name",motto:"Excellence in Education",badge:"",primaryColor:"#6b0f1a",accentColor:"#f0a500",phone:"07XXXXXXXX",location:"Kampala, Uganda",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",scriptUrl:"https://script.google.com/macros/s/AKfycbzmrg6C5OjTtsEZaxkXIskDdviS4G16paS9xO-hktghrKrsA_iu9ihDrhJDI_-LL-rc/exec",package:"starter",trialStart:"2025-06-05",trialEnd:"2025-06-19",termStart:"2025-06-01",termEnd:"2025-09-30",term:2,nexloraPhone:"+256751658855"};}
-  applyBranding();resolvePackage();checkTrialBanner();
+  applyBranding();resolvePackage();checkTrialBanner();populateClassDropdowns();
 }
 
 function applyBranding(){
@@ -1353,36 +1397,93 @@ function updStats(){
 // ═══════════════════════════════════════════════════
 function renderComms(){
   const waLocked=!hasFeature('whatsapp');
-  $('commsGrid').innerHTML=`
-    <div class="cc" onclick="sendMsg('sms','balance')"><div class="ci" style="background:var(--primary-pale)"><svg viewBox="0 0 24 24" style="fill:var(--primary)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div><div class="cn">📱 SMS Balance Reminder</div><div class="cd">Send to all owing parents via SMS</div></div>
-    <div class="cc ${waLocked?'locked':''}" onclick="${waLocked?"showUpgradeNotice('whatsapp')":'sendMsg(\'wa\',\'balance\')'}"><div class="ci" style="background:${waLocked?'var(--primary-pale)':'var(--green-pale)'}"><svg viewBox="0 0 24 24" style="fill:${waLocked?'var(--text-dim)':'var(--green)'}"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="cn">💬 WhatsApp Balance ${waLocked?'<span style="font-size:0.63rem;background:var(--primary-pale);padding:2px 6px;border-radius:10px;color:var(--text-dim)">🔒 Pro</span>':''}</div><div class="cd">${waLocked?'Upgrade to Pro to send WhatsApp messages':'Send via WhatsApp to parents'}</div></div>
-    <div class="cc" onclick="sendMsg('sms','thankyou')"><div class="ci" style="background:var(--green-pale)"><svg viewBox="0 0 24 24" style="fill:var(--green)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div><div class="cn">📱 SMS Thank You</div><div class="cd">Send to fully paid parents</div></div>
-    <div class="cc" onclick="sendMsg('sms','endterm')"><div class="ci" style="background:var(--blue-pale)"><svg viewBox="0 0 24 24" style="fill:var(--blue)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg></div><div class="cn">📱 End of Term SMS</div><div class="cd">With requirements list</div></div>`;
+  const lockBadge=waLocked?'<span style="font-size:0.63rem;background:var(--primary-pale);padding:2px 6px;border-radius:10px;color:var(--text-dim)">🔒 Pro</span>':'';
+  const smsCards=[
+    {type:'balance',icon:'📱',title:'SMS Balance Reminder',desc:'Send to all owing parents'},
+    {type:'thankyou',icon:'📱',title:'SMS Thank You',desc:'Send to fully paid parents'},
+    {type:'partial',icon:'📱',title:'SMS Partial Follow-Up',desc:'Send to partially paid parents'},
+    {type:'endterm',icon:'📱',title:'SMS End of Term',desc:'With requirements list'},
+  ];
+  const waCards=[
+    {type:'balance',icon:'💬',title:'WhatsApp Reminder',desc:'Outstanding balance parents'},
+    {type:'thankyou',icon:'💬',title:'WhatsApp Thank You',desc:'Fully paid parents'},
+    {type:'partial',icon:'💬',title:'WhatsApp Partial Follow-Up',desc:'Partially paid parents'},
+    {type:'endterm',icon:'💬',title:'WhatsApp End of Term',desc:'End-of-term communication'},
+  ];
+  const smsHtml=smsCards.map(c=>`<div class="cc" onclick="sendMsg('sms','${c.type}')"><div class="ci" style="background:var(--primary-pale)"><svg viewBox="0 0 24 24" style="fill:var(--primary)"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div><div class="cn">${c.icon} ${c.title}</div><div class="cd">${c.desc}</div></div>`).join('');
+  const waHtml=waCards.map(c=>`<div class="cc ${waLocked?'locked':''}" onclick="${waLocked?"showUpgradeNotice('whatsapp')":`sendMsg('wa','${c.type}')`}"><div class="ci" style="background:${waLocked?'var(--primary-pale)':'var(--green-pale)'}"><svg viewBox="0 0 24 24" style="fill:${waLocked?'var(--text-dim)':'var(--green)'}"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="cn">${c.icon} ${c.title} ${lockBadge}</div><div class="cd">${waLocked?'Upgrade to Pro to send WhatsApp':c.desc}</div></div>`).join('');
+
+  // Messaging dashboard stats
+  const sentCount=msgLog.length;
+  const totalRecipients=msgLog.reduce((a,m)=>a+m.cnt,0);
+  const failedCount=0; // SMS/WA via device share never fails server-side
+  const statsHtml=`<div class="srow" style="margin-bottom:16px">
+    <div class="sc"><div class="st"><div class="sic dk"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div></div><div class="sv">${sentCount}</div><div class="sl">Messages Sent</div></div>
+    <div class="sc"><div class="st"><div class="sic g"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div></div><div class="sv">${totalRecipients}</div><div class="sl">Recipients Reached</div></div>
+    <div class="sc"><div class="st"><div class="sic r"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg></div></div><div class="sv">${failedCount}</div><div class="sl">Failed Deliveries</div></div>
+    <div class="sc"><div class="st"><div class="sic o"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div></div><div class="sv">${EFFECTIVE_PKG.toUpperCase()}</div><div class="sl">Current Plan</div></div>
+  </div>`;
+
+  $('commsGrid').innerHTML=statsHtml+
+    `<div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;grid-column:1/-1">📱 SMS Campaigns</div>${smsHtml}
+    <div style="font-size:0.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px;grid-column:1/-1">💬 WhatsApp Campaigns</div>${waHtml}`;
 }
 
 function showUpgradeNotice(f){toast(`🔒 ${f==='whatsapp'?'WhatsApp messaging':'This feature'} is available on Pro. See Software Update page.`,false);setTimeout(()=>showPage('update',null),1500);}
 
+let msgLog=[];
 function sendMsg(channel,type){
-  const targets=type==='balance'?stu.filter(s=>s.bal>0):type==='thankyou'?stu.filter(s=>s.bal<=0&&s.fee>0):stu;
+  const targets=type==='balance'?stu.filter(s=>s.bal>0):
+                type==='thankyou'?stu.filter(s=>s.bal<=0&&s.fee>0):
+                type==='partial'?stu.filter(s=>s.bal>0&&s.paid>0):
+                stu;
   if(!targets.length){toast('No recipients found',false);return;}
   targets.forEach(s=>{
     let msg='';const school=CFG.school||'EduCore';const sig=`– EduCore by Nexlora Digital Systems`;
-    if(type==='balance')msg=`Dear ${s.parent}, your child ${s.name} (${s.cls}) has an outstanding fee balance of UGX ${fm(s.bal)} for Term ${term}. Kindly clear at your earliest convenience.\n${sig}`;
-    else if(type==='thankyou')msg=`Dear ${s.parent}, your child ${s.name} (${s.cls}) has CLEARED all fees for Term ${term}. Thank you! 🎉\n${sig}`;
-    else msg=`Dear ${s.parent}, Term ${term} has ended. ${s.bal>0?'Balance: UGX '+fm(s.bal)+' — please clear.':'Fees cleared ✅'}\n${sig}`;
+    if(type==='balance')msg=`Dear ${s.parent}, your child ${s.name} (${s.cls}) has an outstanding fee balance of UGX ${fm(s.bal)} for Term ${term}. Kindly clear it at your earliest convenience.\n${sig}`;
+    else if(type==='thankyou')msg=`Dear ${s.parent}, thank you for completing school fees payment for ${s.name} (${s.cls}). Fully cleared! 🎉\n${sig}`;
+    else if(type==='partial')msg=`Dear ${s.parent}, thank you for your recent payment for ${s.name} (${s.cls}). A balance of UGX ${fm(s.bal)} remains on the student's account.\n${sig}`;
+    else msg=`Dear ${s.parent}, end-of-term communication and requirements for ${s.name} (${s.cls}). ${s.bal>0?'Balance: UGX '+fm(s.bal)+' — please clear.':'Fees cleared ✅'}\n${sig}`;
     const ph=String(s.phone).replace(/\s/g,'');
     if(channel==='wa'&&hasFeature('whatsapp'))window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
     else window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');
   });
-  logMsg(type==='balance'?'Balance Reminder':type==='thankyou'?'Thank You':'End of Term',channel.toUpperCase(),targets.length);
+  const typeLabel={balance:'Balance Reminder',thankyou:'Thank You',partial:'Partial Follow-Up',endterm:'End of Term'}[type]||type;
+  logMsg(typeLabel,channel.toUpperCase(),targets.length);
   toast(`✅ Messages sent to ${targets.length} parent(s)`);
 }
 
-function getRec(){const t=$('mTo').value,c=$('mCls').value;if(t==='owing')return stu.filter(s=>s.bal>0);if(t==='paid')return stu.filter(s=>s.bal<=0&&s.fee>0);if(t==='class')return stu.filter(s=>s.cls===c);return stu;}
-function sendCustom(){const txt=$('mTxt').value.trim();if(!txt){toast('⚠️ Please type a message',false);return;}const r=getRec();if(!r.length){toast('No recipients',false);return;}const sig=`– EduCore by Nexlora Digital Systems`;r.forEach(s=>{const msg=`Dear ${s.parent},\n\n${txt}\n\n${sig}`;const ph=String(s.phone).replace(/\s/g,'');window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');});logMsg('Custom','SMS',r.length);toast(`✅ Sent to ${r.length} parent(s)`);}
+function getRec(){
+  const t=$('mTo').value,c=$('mCls').value;
+  if(t==='owing')return stu.filter(s=>s.bal>0);
+  if(t==='paid')return stu.filter(s=>s.bal<=0&&s.fee>0);
+  if(t==='partial')return stu.filter(s=>s.bal>0&&s.paid>0);
+  if(t==='class')return stu.filter(s=>s.cls===c);
+  if(t==='level'){const grade=(c.match(/\d+/)||[''])[0];return stu.filter(s=>(s.cls.match(/\d+/)||[''])[0]===grade);}
+  return stu;
+}
+function logMsg(type,channel,cnt){
+  msgLog.push({type,channel,cnt,time:nt(),by:cu});
+  const tb=$('mLog');const row=`<tr><td><span class="sbdg sbdg-inactive">${type}</span></td><td><span class="sbdg ${channel==='SMS'?'sbdg-suspended':'sbdg-active'}">${channel}</span></td><td>${cnt} parents</td><td>${nt()}</td><td>${cu}</td></tr>`;if(tb.querySelector('.lr'))tb.innerHTML='';tb.insertAdjacentHTML('afterbegin',row);
+  renderComms();
+}
+function sendCustom(){
+  const txt=$('mTxt').value.trim();if(!txt){toast('⚠️ Please type a message',false);return;}
+  const r=getRec();if(!r.length){toast('No recipients',false);return;}
+  const channel=$('mChannel')?$('mChannel').value:'sms';
+  if(channel==='wa'&&!hasFeature('whatsapp')){toast('🔒 Upgrade to Pro to send WhatsApp messages',false);return;}
+  const sig=`– EduCore by Nexlora Digital Systems`;
+  r.forEach(s=>{
+    const msg=`Dear ${s.parent},\n\n${txt}\n\n${sig}`;
+    const ph=String(s.phone).replace(/\s/g,'');
+    if(channel==='wa')window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+    else window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');
+  });
+  logMsg('Custom',channel.toUpperCase(),r.length);
+  toast(`✅ Sent to ${r.length} parent(s)`);
+}
 function previewMsg(){const r=getRec();if(!r.length){toast('No recipients',false);return;}const s=r[0],txt=$('mTxt').value||'[Your message]';alert(`PREVIEW (${r.length} recipients)\n\nDear ${s.parent},\n\n${txt}\n\n– EduCore by Nexlora Digital Systems`);}
 function contParent(id){const s=stu.find(x=>x.id===id);if(!s)return;const msg=`Dear ${s.parent}, this is a message from EduCore regarding ${s.name} (${s.cls}). Balance: UGX ${fm(s.bal)}.`;const ph=String(s.phone).replace(/\s/g,'');if(hasFeature('whatsapp')&&s.cont==='WhatsApp')window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');else window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');}
-function logMsg(type,channel,cnt){const tb=$('mLog');const row=`<tr><td><span class="sbdg sbdg-inactive">${type}</span></td><td><span class="sbdg ${channel==='SMS'?'sbdg-suspended':'sbdg-active'}">${channel}</span></td><td>${cnt} parents</td><td>${nt()}</td><td>${cu}</td></tr>`;if(tb.querySelector('.lr'))tb.innerHTML='';tb.insertAdjacentHTML('afterbegin',row);}
 
 // ═══════════════════════════════════════════════════
 // REQUIREMENTS
