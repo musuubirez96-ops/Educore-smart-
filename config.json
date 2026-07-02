@@ -12,8 +12,9 @@
   "trialStart": "2026-06-08",
   "trialEnd": "2026-06-26",
   "termStart": "2026-06-08",
-  "termEnd": "2026-09-30",
+  "termEnd": "2026-12-31",
   "term": 2,
+  "institutionType": "primary"
   "nexloraPhone": "+256751658855",
   "features": {
     "starter": [
