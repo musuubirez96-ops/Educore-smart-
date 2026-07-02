@@ -410,11 +410,21 @@ tbody tr:hover{background:#fafafa;}
           </div>
         </div>
         <div class="wg" id="wGrid"><div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text-dim)">⏳ Loading workers...</div></div>
+        <div class="sh" style="margin-top:20px"><span class="stitle">💰 Salary Payment History</span></div>
+        <div class="tw"><div class="tw-scroll"><table>
+          <thead><tr><th>Worker</th><th>Role</th><th>Amount</th><th>Period</th><th>Method</th><th>Date</th><th>Recorded By</th><th>Status</th><th>Approved By</th></tr></thead>
+          <tbody id="salaryHistBody"><tr class="lr"><td colspan="9">Loading salary history...</td></tr></tbody>
+        </table></div></div>
       </div>
 
       <!-- PAYMENT HISTORY -->
       <div id="page-history" class="page">
-        <div class="sh"><span class="stitle">All Payment Records</span></div>
+        <div class="sh">
+          <span class="stitle">All Payment Records</span>
+          <button class="btn boutline" onclick="exportPaymentsCSV()" style="font-size:0.72rem;padding:5px 11px">
+            📥 ${hasFeature('exportCSV')?'Export CSV':'🔒 Pro: Export CSV'}
+          </button>
+        </div>
         <div class="tw"><div class="tw-scroll">
           <table>
             <thead><tr><th>Student</th><th>Class</th><th>Amount</th><th>Balance After</th><th>Method</th><th>Term</th><th>Date</th><th>Time</th><th>By</th></tr></thead>
@@ -493,12 +503,13 @@ let CFG={};
 let EFFECTIVE_PKG='starter';
 const FEATURES={
   starter:['students','workers','expenses','feeTracking','sms','basicAnalytics'],
-  pro:['whatsapp','results','parentPortal','exportCSV','fullAnalytics'],
-  premium:['reportCards','teacherAnalysis','termComparison','customBranding']
+  pro:['whatsapp','results','parentPortal','exportCSV','fullAnalytics','salaryApproval','interactiveCards','paymentHistory','whatsappCampaigns'],
+  premium:['reportCards','teacherAnalysis','termComparison','customBranding','fullCSV','advancedReports']
 };
 function hasFeature(f){
   if(EFFECTIVE_PKG==='premium')return true;
   if(EFFECTIVE_PKG==='pro')return[...FEATURES.starter,...FEATURES.pro].includes(f);
+  if(EFFECTIVE_PKG==='trial')return true;
   return FEATURES.starter.includes(f);
 }
 function resolvePackage(){
@@ -549,17 +560,30 @@ function applyBranding(){
 
 function checkTrialBanner(){
   const pkg=resolvePackage();const b=document.getElementById('trialBanner');
+  // Update package pill label
+  const pill=document.getElementById('pkgLabel');
+  if(pill){
+    const labels={trial:'TRIAL',starter:'STARTER',pro:'PRO',premium:'PREMIUM'};
+    const colors={trial:'var(--accent)',starter:'var(--gray)',pro:'var(--primary)',premium:'#7b2d8b'};
+    pill.textContent=labels[EFFECTIVE_PKG]||'STARTER';
+    pill.style.background=colors[EFFECTIVE_PKG]||'var(--gray)';
+  }
   if(pkg==='trial'){
     const d=trialDaysLeft();
-    if(d<=3){b.className='trial-banner urgent';b.innerHTML=`🔴 Trial ends in ${d} day${d===1?'':'s'}! <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Update now →</a>`;}
-    else if(d<=7){b.className='trial-banner warning';b.innerHTML=`🟠 ${d} days left in your free trial. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">View options →</a>`;}
+    if(d<=0){
+      // Trial expired — drop to starter
+      EFFECTIVE_PKG=CFG.package||'starter';
+      b.className='trial-banner expired';
+      b.innerHTML=`⛔ Free trial expired. Now on <strong>${(EFFECTIVE_PKG).toUpperCase()}</strong> plan. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Upgrade →</a>`;
+    }else if(d<=3){b.className='trial-banner urgent';b.innerHTML=`🔴 Trial ends in ${d} day${d===1?'':'s'}! <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Update now →</a>`;}
+    else if(d<=7){b.className='trial-banner warning';b.innerHTML=`🟠 ${d} days left in free trial — Full Premium access. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">View options →</a>`;}
     else{b.className='trial-banner active';b.innerHTML=`🎉 Free trial active — ${d} days remaining. Full Premium access!`;}
   }else if(isExpired()){
     b.className='trial-banner expired';
-    b.innerHTML=`⚠️ System update due. Your data is safe but adding new records is paused. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Update now →</a>`;
+    b.innerHTML=`⚠️ System update due. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Update now →</a>`;
   }else{
     const d=termDaysLeft();
-    if(d<=14){b.className='trial-banner warning';b.innerHTML=`🟡 ${d} days until system update is due. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">View options →</a>`;}
+    if(d<=14){b.className='trial-banner warning';b.innerHTML=`🟡 ${d} days until system update. Package: <strong>${EFFECTIVE_PKG.toUpperCase()}</strong>. <a href="#" onclick="showPage('update',null)">View options →</a>`;}
     else b.style.display='none';
   }
   if(document.getElementById('daysLeftEl')){
@@ -576,17 +600,21 @@ function saveAccounts(a){localStorage.setItem(SK,JSON.stringify(a));}
 
 // ── STATE ──
 const COLS=['#2d2d2d','#117a65','#6e2f8a','#b7770d','#c0392b','#2e86c1','#1e8449'];
-let cu='',term=2,stu=[],wks=[],todayPays=[],allPays=[],exps=[],tries=0;
+let cu='',term=2,stu=[],wks=[],todayPays=[],allPays=[],exps=[],tries=0,salaryApprovals=[];
 const MAX=4;
 
-// Read approvals from localStorage (set by Principal dashboard)
+// Approvals now read from salaryapprovals sheet — localStorage kept as fallback for principal cross-tab
 function getApprovals(){
-  try{return JSON.parse(localStorage.getItem('educore_payroll_approvals'))||{};}
-  catch(e){return{};}
+  // Build a map of workerId -> latest approval status from sheet
+  const map={};
+  salaryApprovals.forEach(r=>{
+    if(r.status==='Approved'){map[r.workerId]=true;}
+  });
+  // Also merge localStorage approvals set by principal dashboard
+  try{const ls=JSON.parse(localStorage.getItem('educore_payroll_approvals'))||{};Object.assign(map,ls);}catch(e){}
+  return map;
 }
-function saveApprovals(a){
-  localStorage.setItem('educore_payroll_approvals',JSON.stringify(a));
-}
+function saveApprovals(a){localStorage.setItem('educore_payroll_approvals',JSON.stringify(a));}
 
 function switchTab(t){
   document.getElementById('loginForm').style.display=t==='login'?'block':'none';
@@ -628,7 +656,7 @@ function doLogin(){
     document.getElementById('eBy').value=cu;
     term=CFG.term||2;
     tick();setInterval(tick,1000);
-    loadStu();loadWks();loadPayHistory();loadExps();
+    loadStu();loadWks();loadPayHistory();loadExps();loadSalaryApprovals();
   }else{
     tries++;const rem=MAX-tries;
     if(tries>=MAX){
@@ -737,6 +765,40 @@ async function loadExps(){
     });
     rExps();
   }catch(e){console.log('Expenses error',e);}
+}
+
+async function loadSalaryApprovals(){
+  try{
+    const rows=await fetchGviz('salaryapprovals');
+    salaryApprovals=rows.filter(r=>r[0]&&r[0]!=='PaymentID').map(r=>({
+      paymentId:String(r[0]||''),
+      workerId:String(r[1]||''),
+      workerName:String(r[2]||''),
+      role:String(r[3]||''),
+      amount:parseFloat(r[4])||0,
+      period:String(r[5]||'Monthly'),
+      method:String(r[6]||'Cash'),
+      recordedBy:String(r[7]||''),
+      date:String(r[8]||''),
+      time:String(r[9]||''),
+      status:String(r[10]||'Pending'),
+      approvedBy:String(r[11]||''),
+      approvalDate:String(r[12]||''),
+    }));
+    rWks();rSalaryHistory();
+  }catch(e){console.log('SalaryApprovals error',e);}
+}
+
+function rSalaryHistory(){
+  const tb=document.getElementById('salaryHistBody');
+  if(!tb)return;
+  if(!salaryApprovals.length){tb.innerHTML='<tr class="lr"><td colspan="9">No salary records yet.</td></tr>';return;}
+  tb.innerHTML=salaryApprovals.slice().reverse().map(r=>`<tr>
+    <td>${r.workerName}</td><td>${r.role}</td><td>UGX ${fm(r.amount)}</td><td>${r.period}</td>
+    <td>${r.method}</td><td>${r.date}</td><td>${r.recordedBy}</td>
+    <td><span class="sbdg ${r.status==='Approved'?'sbdg-active':'sbdg-suspended'}">${r.status}</span></td>
+    <td>${r.approvedBy||'—'}</td>
+  </tr>`).join('');
 }
 
 async function loadPayHistory(){
@@ -1043,7 +1105,7 @@ function payWk(id,type){
     rExps();rWks();
     sendWorkerMsg(w,w.amt,'Full Salary');
     toast(`✅ UGX ${fm(w.amt)} paid to ${w.name}`);
-    fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'payWorker',workerName:w.name,payType:'Full',amount:w.amt,date:nd(),time:nt(),paidBy:cu})});
+    fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'payWorker',workerId:w.id,workerName:w.name,workerRole:w.role,payType:'Full',amount:w.amt,date:nd(),time:nt(),paidBy:cu,method:'Cash'})}).then(()=>loadSalaryApprovals());
   }else{
     document.getElementById('advTitle').textContent=`Advance Payment — ${w.name}`;
     document.getElementById('advBody').innerHTML=`
@@ -1070,7 +1132,7 @@ function confirmAdv(id){
   rExps();rWks();closeMo('advMo');
   sendWorkerMsg(w,amt,'Salary Advance');
   toast(`✅ Advance of UGX ${fm(amt)} paid to ${w.name}`);
-  fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'payWorker',workerName:w.name,payType:'Advance',amount:amt,date:nd(),time:nt(),paidBy:cu})});
+  fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'payWorker',workerId:w.id,workerName:w.name,workerRole:w.role,payType:'Advance',amount:amt,date:nd(),time:nt(),paidBy:cu,method:'Cash'})}).then(()=>loadSalaryApprovals());
 }
 
 function sendWorkerMsg(w,amt,type){
@@ -1081,6 +1143,29 @@ function sendWorkerMsg(w,amt,type){
   }else{
     window.open(`sms:${ph}?body=${msg}`,'_blank');
   }
+}
+
+function exportPaymentsCSV(){
+  if(!hasFeature('exportCSV')){toast('🔒 Upgrade to Pro to export CSV',false);return;}
+  const rows=[['StudentID','Student','Class','Amount Paid','Balance After','Method','Date','Time','Recorded By']];
+  allPays.forEach(p=>rows.push([p.id,p.name,p.cls,p.amt,p.newBal||'',p.meth||'',p.date,p.time,p.by]));
+  dlCSV(rows,'payments_'+nd()+'.csv');
+}
+function exportExpensesCSV(){
+  if(!hasFeature('exportCSV')){toast('🔒 Upgrade to Pro to export CSV',false);return;}
+  const rows=[['Description','Category','Amount','Date','Time','Approved By','Recorded By']];
+  exps.forEach(e=>rows.push([e.desc,e.cat,e.amt,e.date,e.time||'',e.approved||'',e.by]));
+  dlCSV(rows,'expenses_'+nd()+'.csv');
+}
+function exportSalaryCSV(){
+  if(!hasFeature('exportCSV')){toast('🔒 Upgrade to Pro to export CSV',false);return;}
+  const rows=[['PaymentID','Worker','Role','Amount','Period','Method','Recorded By','Date','Status','Approved By','Approval Date']];
+  salaryApprovals.forEach(r=>rows.push([r.paymentId,r.workerName,r.role,r.amount,r.period,r.method,r.recordedBy,r.date,r.status,r.approvedBy,r.approvalDate]));
+  dlCSV(rows,'salary_history_'+nd()+'.csv');
+}
+function dlCSV(rows,filename){
+  const csv=rows.map(r=>r.map(v=>'"'+(String(v||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=filename;a.click();
 }
 
 // ── HELPERS ──

@@ -506,6 +506,15 @@ table tbody tr:hover{background:var(--bg);}
             </table>
           </div>
         </div>
+        <div class="cardBox" style="margin-top:16px">
+          <h3>💰 Salary Payment History</h3>
+          <div class="tableWrap">
+            <table>
+              <thead><tr><th>Worker</th><th>Role</th><th>Amount</th><th>Period</th><th>Method</th><th>Date</th><th>Recorded By</th><th>Status</th><th>Approved By</th></tr></thead>
+              <tbody id="salaryHistoryBody"><tr class="loadingRow"><td colspan="9">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- PAGE 5: STAFF ACTIVITY -->
@@ -603,6 +612,14 @@ table tbody tr:hover{background:var(--bg);}
 </div>
 
 <!-- STUDENT PROFILE MODAL -->
+<div class="modalOverlay" id="drillMo" style="display:none;align-items:flex-start;padding-top:60px">
+  <div class="modalBox" style="max-width:720px;width:95%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+    <button class="closeModal" onclick="document.getElementById('drillMo').classList.remove('show');document.getElementById('drillMo').style.display='none'">✕</button>
+    <h2 id="drillTitle" style="font-size:1rem;margin-bottom:14px;color:var(--primary)"></h2>
+    <div id="drillBody" style="overflow-y:auto;flex:1;font-size:0.8rem"></div>
+  </div>
+</div>
+
 <div class="modalOverlay" id="studentModal">
   <div class="modalBox">
     <button class="closeModal" onclick="closeModal()">✕</button>
@@ -661,11 +678,22 @@ let CFG = {
 const AUTH_KEY = "educore_principal_v2";
 const APPROVALS_KEY = "educore_payroll_approvals";
 
+let EFFECTIVE_PKG = 'starter';
+function resolvePackage(){
+  const now=new Date(),te=new Date(CFG.trialEnd||'2000-01-01'),ts=new Date(CFG.trialStart||'2000-01-01');
+  if(now>=ts&&now<=te){EFFECTIVE_PKG='premium';return'trial';}
+  EFFECTIVE_PKG=CFG.package||'starter';return EFFECTIVE_PKG;
+}
+function trialDaysLeft(){return Math.ceil((new Date(CFG.trialEnd)-new Date())/(1000*60*60*24));}
+function termDaysLeft(){return Math.ceil((new Date(CFG.termEnd)-new Date())/(1000*60*60*24));}
+function isExpired(){const p=resolvePackage();if(p==='trial')return false;return new Date()>new Date(CFG.termEnd);}
+
 let DATA = {
   students: [],
   workers: [],
   stafflog: [],
   requirements: [],
+  salaryApprovals: [],
   paymentsToday: 0,
   expensesToday: 0
 };
@@ -880,6 +908,10 @@ function applyConfig(){
   r.style.setProperty('--accent-pale',a+'22');
   if(CFG.bgColor)r.style.setProperty('--bg',CFG.bgColor);
 
+  resolvePackage();
+  // Principal always retains full feature access regardless of package tier, per system design
+  EFFECTIVE_PKG = 'premium';
+
   $("loginSchoolName").textContent = CFG.school || "EduCore";
   $("loginBadge").src = CFG.badge || "";
   $("sbBadge").src = CFG.badge || "";
@@ -1016,10 +1048,11 @@ async function loadAllData(){
       fetchGviz("payments").catch(()=>[]),
       fetchGviz("expenses").catch(()=>[]),
       fetchGviz("requirements").catch(()=>[]),
-      fetchGviz("studentitems").catch(()=>[])
+      fetchGviz("studentitems").catch(()=>[]),
+      fetchGviz("salaryapprovals").catch(()=>[])
     ]);
 
-    const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw, requirementsRaw, stuItemsRaw] = results;
+    const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw, requirementsRaw, stuItemsRaw, salaryRaw] = results;
 
     // STUDENTS
     DATA.students = studentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => ({
@@ -1063,25 +1096,36 @@ async function loadAllData(){
       time: String(r[4] || "").trim()
     }));
 
-    // PAYMENTS TODAY
+    // PAYMENTS -- store full list + today total
     const today = todayStr();
+    DATA.payments = paymentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
+      studentId: String(r[0]||"").trim(),
+      studentName: String(r[1]||"").trim(),
+      class: String(r[2]||"").trim(),
+      amountPaid: parseFloat(r[3])||0,
+      newBalance: parseFloat(r[4])||0,
+      date: normalizeDate(r[5]),
+      time: String(r[6]||"").trim(),
+      receivedBy: String(r[7]||"").trim(),
+      method: String(r[8]||"").trim()
+    }));
     let paidToday = 0;
-    paymentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").forEach(r => {
-      const d = normalizeDate(r[5]);
-      if(d === today){
-        paidToday += parseFloat(r[3]) || 0;
-      }
-    });
+    DATA.payments.forEach(p => { if(p.date === today) paidToday += p.amountPaid; });
     DATA.paymentsToday = paidToday;
 
-    // EXPENSES TODAY
+    // EXPENSES -- store full list + today total
+    DATA.expenses = expensesRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
+      id: String(r[0]||"").trim(),
+      description: String(r[1]||"").trim(),
+      category: String(r[2]||"").trim(),
+      amount: parseFloat(r[3])||0,
+      date: normalizeDate(r[4]),
+      time: String(r[5]||"").trim(),
+      approvedBy: String(r[6]||"").trim(),
+      recordedBy: String(r[7]||"").trim()
+    }));
     let spentToday = 0;
-    expensesRaw.filter(r => !isHeaderRow(r) && r[0] !== "").forEach(r => {
-      const d = normalizeDate(r[4]);
-      if(d === today){
-        spentToday += parseFloat(r[3]) || 0;
-      }
-    });
+    DATA.expenses.forEach(e => { if(e.date === today) spentToday += e.amount; });
     DATA.expensesToday = spentToday;
 
     // REQUIREMENTS -- columns: CLASS, ITEM1-6
@@ -1096,6 +1140,23 @@ async function loadAllData(){
     DATA.stuItems = stuItemsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
       id: String(r[0] || "").trim(),
       brought: [r[1],r[2],r[3],r[4],r[5],r[6]].map(v => String(v||"").trim().toUpperCase() === "TRUE")
+    }));
+
+    // SALARY APPROVALS -- columns: PaymentID, WorkerID, WorkerName, Role, Amount, Period, Method, RecordedBy, Date, Time, Status, ApprovedBy, ApprovalDate
+    DATA.salaryApprovals = (salaryRaw||[]).filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
+      paymentId: String(r[0]||"").trim(),
+      workerId:  String(r[1]||"").trim(),
+      workerName:String(r[2]||"").trim(),
+      role:      String(r[3]||"").trim(),
+      amount:    parseFloat(r[4])||0,
+      period:    String(r[5]||"Monthly").trim(),
+      method:    String(r[6]||"Cash").trim(),
+      recordedBy:String(r[7]||"").trim(),
+      date:      String(r[8]||"").trim(),
+      time:      String(r[9]||"").trim(),
+      status:    String(r[10]||"Pending").trim(),
+      approvedBy:String(r[11]||"").trim(),
+      approvalDate:String(r[12]||"").trim(),
     }));
 
     renderAll();
@@ -1117,6 +1178,7 @@ function renderAll(){
   renderAnalysisPage();
   renderWorkers();
   renderPayrollSummary();
+  renderSalaryHistory();
   renderActivityLog();
   renderRequirementsList();
   renderRequirementsStatus();
@@ -1132,23 +1194,86 @@ function renderStatGrid(){
     totalBalance += Math.max(s.termFee - s.paid, 0);
   });
   const activeWorkers = wks.filter(w => (w.status || "").toLowerCase() !== "inactive").length;
+  const isPro = hasFeature('interactiveCards');
 
   const stats = [
-    {label:"Students Enrolled", val: stu.length, cls:"blue", sub:"Total active students"},
-    {label:"Fees Collected", val: fmtMoney(totalPaid), cls:"green", sub:"This term"},
-    {label:"Outstanding Fees", val: fmtMoney(totalBalance), cls:"red", sub:"Balance remaining"},
-    {label:"Active Workers", val: activeWorkers, cls:"blue", sub: wks.length + " total on record"},
-    {label:"Paid Today", val: fmtMoney(DATA.paymentsToday), cls:"green", sub: todayStr()},
-    {label:"Spent Today", val: fmtMoney(DATA.expensesToday), cls:"orange", sub: todayStr()}
+    {label:"Students Enrolled", val: stu.length, cls:"blue", sub:"Total active students", action: isPro ? "openDrilldown('students')" : null},
+    {label:"Fees Collected", val: fmtMoney(totalPaid), cls:"green", sub:"This term", action: isPro ? "openDrilldown('collected')" : null},
+    {label:"Outstanding Fees", val: fmtMoney(totalBalance), cls:"red", sub:"Balance remaining", action: isPro ? "openDrilldown('outstanding')" : null},
+    {label:"Active Workers", val: activeWorkers, cls:"blue", sub: wks.length + " total on record", action: null},
+    {label:"Paid Today", val: fmtMoney(DATA.paymentsToday), cls:"green", sub: todayStr(), action: isPro ? "openDrilldown('paidtoday')" : null},
+    {label:"Spent Today", val: fmtMoney(DATA.expensesToday), cls:"orange", sub: todayStr(), action: isPro ? "openDrilldown('spenttoday')" : null}
   ];
 
   $("statGrid").innerHTML = stats.map(s => `
-    <div class="statCard ${s.cls}">
-      <div class="slabel">${s.label}</div>
+    <div class="statCard ${s.cls}" ${s.action ? `onclick="${s.action}" style="cursor:pointer;transition:transform .15s;border:2px solid transparent;" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''"` : ''}>
+      <div class="slabel">${s.label}${s.action ? ' <span style="font-size:.65rem;opacity:.6">▶ View</span>' : ''}</div>
       <div class="sval">${s.val}</div>
       <div class="ssub">${s.sub}</div>
     </div>
   `).join("");
+}
+
+function openDrilldown(type){
+  const mo = document.getElementById('drillMo');
+  const title = document.getElementById('drillTitle');
+  const body = document.getElementById('drillBody');
+  const today = todayStr();
+
+  let titleText = '', rows = '';
+
+  if(type === 'students'){
+    titleText = '👥 All Students';
+    rows = DATA.students.map(s=>`<tr><td>${s.name}</td><td>${s.id}</td><td>${s.class}</td><td>${fmtMoney(s.termFee)}</td><td>${fmtMoney(s.paid)}</td><td style="color:${s.termFee-s.paid>0?'var(--red)':'var(--green)'};">${fmtMoney(Math.max(s.termFee-s.paid,0))}</td></tr>`).join('');
+    body.innerHTML = `<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)"><th style="padding:8px 10px;text-align:left;font-size:.72rem">Name</th><th>ID</th><th>Class</th><th>Fee</th><th>Paid</th><th>Balance</th></tr></thead><tbody>${rows}</tbody></table>`;
+  } else if(type === 'collected'){
+    titleText = '💰 Fees Collected This Term';
+    rows = DATA.payments.map(p=>`<tr><td>${p.studentName}</td><td>${p.class}</td><td>${fmtMoney(p.amountPaid)}</td><td>${p.date}</td><td>${p.receivedBy}</td><td>${p.method}</td></tr>`).join('');
+    const total = DATA.payments.reduce((acc,p)=>acc+p.amountPaid,0);
+    body.innerHTML = `<div style="font-weight:700;color:var(--green);margin-bottom:10px">Total: ${fmtMoney(total)}</div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)"><th style="padding:8px 10px;text-align:left;font-size:.72rem">Student</th><th>Class</th><th>Amount</th><th>Date</th><th>By</th><th>Method</th></tr></thead><tbody>${rows}</tbody></table>`;
+  } else if(type === 'outstanding'){
+    titleText = '⚠️ Students With Outstanding Balance';
+    const owing = DATA.students.filter(s=>s.termFee-s.paid>0).sort((a,b)=>(b.termFee-b.paid)-(a.termFee-a.paid));
+    rows = owing.map(s=>`<tr><td>${s.name}</td><td>${s.class}</td><td>${fmtMoney(s.termFee)}</td><td>${fmtMoney(s.paid)}</td><td style="color:var(--red);font-weight:700">${fmtMoney(s.termFee-s.paid)}</td><td>${s.parent}</td><td>${s.phone}</td></tr>`).join('');
+    body.innerHTML = `<div style="font-weight:700;color:var(--red);margin-bottom:10px">${owing.length} students owing — Total: ${fmtMoney(owing.reduce((a,s)=>a+(s.termFee-s.paid),0))}</div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)"><th style="padding:8px 10px;text-align:left;font-size:.72rem">Student</th><th>Class</th><th>Fee</th><th>Paid</th><th>Balance</th><th>Parent</th><th>Phone</th></tr></thead><tbody>${rows}</tbody></table>`;
+  } else if(type === 'paidtoday'){
+    titleText = '✅ Payments Received Today';
+    const todayPays = DATA.payments.filter(p=>p.date===today);
+    rows = todayPays.map(p=>`<tr><td>${p.studentName}</td><td>${p.class}</td><td>${fmtMoney(p.amountPaid)}</td><td>${p.method}</td><td>${p.time}</td><td>${p.receivedBy}</td></tr>`).join('');
+    const total = todayPays.reduce((a,p)=>a+p.amountPaid,0);
+    body.innerHTML = `<div style="font-weight:700;color:var(--green);margin-bottom:10px">${todayPays.length} payments — Total: ${fmtMoney(total)}</div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)"><th style="padding:8px 10px;text-align:left;font-size:.72rem">Student</th><th>Class</th><th>Amount</th><th>Method</th><th>Time</th><th>By</th></tr></thead><tbody>${rows||'<tr><td colspan="6" style="text-align:center;padding:20px;color:#999">No payments today</td></tr>'}</tbody></table>`;
+  } else if(type === 'spenttoday'){
+    titleText = '📤 Expenses Today';
+    const todayExps = DATA.expenses.filter(e=>e.date===today);
+    rows = todayExps.map(e=>`<tr><td>${e.description}</td><td>${e.category}</td><td style="color:var(--red);font-weight:700">${fmtMoney(e.amount)}</td><td>${e.time}</td><td>${e.approvedBy}</td></tr>`).join('');
+    const total = todayExps.reduce((a,e)=>a+e.amount,0);
+    body.innerHTML = `<div style="font-weight:700;color:var(--red);margin-bottom:10px">${todayExps.length} expenses — Total: ${fmtMoney(total)}</div><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--bg)"><th style="padding:8px 10px;text-align:left;font-size:.72rem">Description</th><th>Category</th><th>Amount</th><th>Time</th><th>Approved By</th></tr></thead><tbody>${rows||'<tr><td colspan="5" style="text-align:center;padding:20px;color:#999">No expenses today</td></tr>'}</tbody></table>`;
+  }
+
+  title.textContent = titleText;
+  if(hasFeature('exportCSV')){
+    body.innerHTML = `<div style="text-align:right;margin-bottom:8px"><button onclick="exportDrillCSV('${type}')" style="background:var(--primary);color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:.72rem;font-weight:600;cursor:pointer">📥 Export CSV</button></div>` + body.innerHTML;
+  }
+  mo.classList.add('show');
+  mo.style.display='flex';
+}
+
+function exportDrillCSV(type){
+  let rows=[];
+  if(type==='students'){rows=[['Name','ID','Class','Fee','Paid','Balance'],...DATA.students.map(s=>[s.name,s.id,s.class,s.termFee,s.paid,Math.max(s.termFee-s.paid,0)])];}
+  else if(type==='collected'){rows=[['Student','Class','Amount','Date','By','Method'],...DATA.payments.map(p=>[p.studentName,p.class,p.amountPaid,p.date,p.receivedBy,p.method])];}
+  else if(type==='outstanding'){rows=[['Student','Class','Fee','Paid','Balance','Parent','Phone'],...DATA.students.filter(s=>s.termFee-s.paid>0).map(s=>[s.name,s.class,s.termFee,s.paid,s.termFee-s.paid,s.parent,s.phone])];}
+  else if(type==='paidtoday'){const t=todayStr();rows=[['Student','Class','Amount','Method','Time','By'],...DATA.payments.filter(p=>p.date===t).map(p=>[p.studentName,p.class,p.amountPaid,p.method,p.time,p.receivedBy])];}
+  else if(type==='spenttoday'){const t=todayStr();rows=[['Description','Category','Amount','Time','Approved By'],...DATA.expenses.filter(e=>e.date===t).map(e=>[e.description,e.category,e.amount,e.time,e.approvedBy])];}
+  const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=type+'_'+todayStr()+'.csv';a.click();
+}
+
+function hasFeature(f){
+  if(EFFECTIVE_PKG==='premium')return true;
+  if(EFFECTIVE_PKG==='pro')return['whatsapp','results','parentPortal','exportCSV','fullAnalytics','salaryApproval','interactiveCards','paymentHistory'].includes(f)||['students','workers','expenses','feeTracking','sms','basicAnalytics'].includes(f);
+  if(EFFECTIVE_PKG==='trial')return true;
+  return['students','workers','expenses','feeTracking','sms','basicAnalytics'].includes(f);
 }
 
 function renderFeeProgress(){
@@ -1502,79 +1627,97 @@ function renderAnalysisPage(){
 
 /* ===================== APPROVE PAYROLL PAGE ===================== */
 function getApprovals(){
+  const map = {};
+  (DATA.salaryApprovals||[]).forEach(r => {
+    if(r.status === 'Approved') map[r.workerId] = {approvedBy: r.approvedBy, date: r.approvalDate};
+  });
   try{
-    const raw = localStorage.getItem(APPROVALS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  }catch(e){
-    return {};
-  }
+    const ls = JSON.parse(localStorage.getItem(APPROVALS_KEY))||{};
+    Object.keys(ls).forEach(k => { if(!map[k]) map[k] = ls[k]; });
+  }catch(e){}
+  return map;
 }
-function saveApprovals(obj){
-  localStorage.setItem(APPROVALS_KEY, JSON.stringify(obj));
-}
+function saveApprovals(obj){ localStorage.setItem(APPROVALS_KEY, JSON.stringify(obj)); }
 
 function renderWorkers(){
   const grid = $("workerGrid");
   const q = ($("workerSearch") ? $("workerSearch").value.trim().toLowerCase() : "");
-  const approvals = getApprovals();
 
   let workers = DATA.workers;
-  if(q){
-    workers = workers.filter(w =>
-      w.name.toLowerCase().includes(q) || w.role.toLowerCase().includes(q)
-    );
-  }
-
-  if(workers.length === 0){
-    grid.innerHTML = '<div class="empty">No workers found</div>';
-    return;
-  }
+  if(q) workers = workers.filter(w => w.name.toLowerCase().includes(q) || w.role.toLowerCase().includes(q));
+  if(workers.length === 0){ grid.innerHTML = '<div class="empty">No workers found</div>'; return; }
 
   grid.innerHTML = workers.map(w => {
-    const isApproved = !!approvals[w.id];
+    // Find latest pending salary record for this worker
+    const pending = (DATA.salaryApprovals||[]).filter(r => r.workerId === w.id && r.status === 'Pending');
+    const latestPending = pending.length ? pending[pending.length-1] : null;
+    const approvedRecs = (DATA.salaryApprovals||[]).filter(r => r.workerId === w.id && r.status === 'Approved');
+    const lastApproved = approvedRecs.length ? approvedRecs[approvedRecs.length-1] : null;
     return `
       <div class="workerCard">
         <div class="wtop">
-          <div>
-            <h4>${w.name}</h4>
-            <div class="wrole">${w.role}</div>
-          </div>
+          <div><h4>${w.name}</h4><div class="wrole">${w.role}</div></div>
           <span class="badge blue">${w.category || 'General'}</span>
         </div>
         <div class="wamt">${fmtMoney(w.amount)}</div>
         <div class="wfreq">Paid ${w.payType || 'Monthly'}</div>
-        ${isApproved
-          ? `<button class="approveBtn approved" disabled>✅ Approved</button>`
-          : `<button class="approveBtn pending" onclick="approveWorker('${w.id.replace(/'/g, "\\'")}','${w.name.replace(/'/g, "\\'")}')">Tap to Approve</button>`
+        ${latestPending
+          ? `<button class="approveBtn pending" onclick="approveWorker('${latestPending.paymentId.replace(/'/g,"\\'")}','${w.name.replace(/'/g,"\\'")}')">✅ Approve Payment (UGX ${fmtMoney(latestPending.amount)})</button>`
+          : lastApproved
+            ? `<button class="approveBtn approved" disabled>✅ Last: Approved ${lastApproved.approvalDate} by ${lastApproved.approvedBy}</button>`
+            : `<div style="font-size:0.75rem;color:var(--text-dim);padding:8px 0">No pending payment</div>`
         }
       </div>
     `;
   }).join("");
 }
 
-function approveWorker(id, name){
-  if(!confirm("Approve payroll payment for " + name + "? This will be saved permanently.")){
-    return;
-  }
-  const approvals = getApprovals();
-  approvals[id] = true;
-  saveApprovals(approvals);
-  showToast(name + "'s payroll approved ✅", "success");
-  renderWorkers();
-  renderPayrollSummary();
+async function approveWorker(paymentId, workerName){
+  if(!confirm("Approve this salary payment for " + workerName + "?")) return;
+  const approvalDate = new Date().toISOString().split('T')[0];
+  const rec = (DATA.salaryApprovals||[]).find(r => r.paymentId === paymentId);
+  if(rec){ rec.status = 'Approved'; rec.approvedBy = cu||'Principal'; rec.approvalDate = approvalDate; }
+  renderWorkers(); renderPayrollSummary(); renderSalaryHistory();
+  showToast(workerName + " salary approved ✅", "success");
+  try{
+    const resp = await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({
+      action:'approveSalary', paymentId, approvedBy:cu||'Principal', approvalDate
+    })});
+    const r = await resp.json();
+    if(r.status !== 'success') showToast("Approved locally — sheet sync may be delayed","warning");
+  }catch(e){ showToast("Approved locally — will sync when connected","warning"); }
+}
+
+function renderSalaryHistory(){
+  const tbody = $("salaryHistoryBody");
+  if(!tbody) return;
+  const all = DATA.salaryApprovals||[];
+  if(!all.length){ tbody.innerHTML='<tr><td colspan="9" class="empty">No salary records yet</td></tr>'; return; }
+  tbody.innerHTML = [...all].reverse().map(r => `
+    <tr>
+      <td>${r.workerName}</td>
+      <td>${r.role}</td>
+      <td>${fmtMoney(r.amount)}</td>
+      <td>${r.period}</td>
+      <td>${r.method}</td>
+      <td>${r.date}</td>
+      <td>${r.recordedBy}</td>
+      <td><span class="badge ${r.status==='Approved'?'green':'orange'}">${r.status}</span></td>
+      <td>${r.approvedBy||'—'}</td>
+    </tr>`).join('');
 }
 
 function renderPayrollSummary(){
   const tbody = $("payrollSummaryBody");
-  const approvals = getApprovals();
-
   if(DATA.workers.length === 0){
     tbody.innerHTML = '<tr><td colspan="6" class="empty">No worker data available</td></tr>';
     return;
   }
-
   tbody.innerHTML = DATA.workers.map(w => {
-    const isApproved = !!approvals[w.id];
+    const recs = (DATA.salaryApprovals||[]).filter(r => r.workerId === w.id);
+    const lastRec = recs.length ? recs[recs.length-1] : null;
+    const statusLabel = lastRec ? lastRec.status : 'No Record';
+    const statusCls = lastRec ? (lastRec.status==='Approved'?'green':'orange') : 'gray';
     return `
       <tr>
         <td>${w.name}</td>
@@ -1582,7 +1725,7 @@ function renderPayrollSummary(){
         <td>${w.category || 'General'}</td>
         <td>${w.payType || 'Monthly'}</td>
         <td>${fmtMoney(w.amount)}</td>
-        <td><span class="badge ${isApproved ? 'green' : 'orange'}">${isApproved ? 'Approved' : 'Pending'}</span></td>
+        <td><span class="badge ${statusCls}">${statusLabel}</span></td>
       </tr>
     `;
   }).join("");
