@@ -523,7 +523,7 @@ function isExpired(){const p=resolvePackage();if(p==='trial')return false;return
 
 async function loadConfig(){
   try{const r=await fetch('./config.json?t='+Date.now());CFG=await r.json();}
-  catch(e){CFG={school:"Your School Name",motto:"Excellence in Education",badge:"",primaryColor:"#2d2d2d",accentColor:"#f0a500",phone:"07XXXXXXXX",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",scriptUrl:"https://script.google.com/macros/s/AKfycbzmrg6C5OjTtsEZaxkXIskDdviS4G16paS9xO-hktghrKrsA_iu9ihDrhJDI_-LL-rc/exec",package:"starter",trialStart:"2026-06-08",trialEnd:"2026-06-22",termStart:"2026-06-08",termEnd:"2026-09-30",term:2,nexloraPhone:"+256751658855"};}
+  catch(e){CFG={school:"Your School Name",motto:"Excellence in Education",badge:"",primaryColor:"#1D9E8C",accentColor:"#D4A96A",phone:"07XXXXXXXX",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",scriptUrl:"https://script.google.com/macros/s/AKfycbzmrg6C5OjTtsEZaxkXIskDdviS4G16paS9xO-hktghrKrsA_iu9ihDrhJDI_-LL-rc/exec",package:"starter",trialStart:"2026-06-08",trialEnd:"2026-06-22",termStart:"2026-06-08",termEnd:"2026-09-30",term:2,nexloraPhone:"+256751658855"};}
   applyBranding();resolvePackage();checkTrialBanner();
 }
 
