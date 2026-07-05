@@ -682,6 +682,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             <div class="ff"><label>Channel</label><select id="mChannel"><option value="sms">📱 SMS</option><option value="wa">💬 WhatsApp ${hasFeature('whatsapp')?'':'(🔒 Pro)'}</option></select></div>
             <div class="ff"><label>Send To</label><select id="mTo" onchange="document.getElementById('clsWrap').style.display=(this.value==='class'||this.value==='level')?'block':'none'"><option value="all">All Parents</option><option value="owing">Outstanding Balance</option><option value="paid">Fully Paid Parents</option><option value="partial">Partially Paid Parents</option><option value="class">Specific Class</option><option value="level">Specific Academic Level</option></select></div>
             <div class="ff full" id="clsWrap" style="display:none"><label>Class / Level</label><select id="mCls"></select></div>
+            <div class="ff full"><label>Quick Templates</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+                <button class="btn bgray" style="font-size:0.67rem;padding:4px 8px" onclick="setTemplate('paid')">✅ Fully Paid</button>
+                <button class="btn bgray" style="font-size:0.67rem;padding:4px 8px" onclick="setTemplate('balance')">⚠️ Outstanding</button>
+                <button class="btn bgray" style="font-size:0.67rem;padding:4px 8px" onclick="setTemplate('partial')">💛 Partial Payment</button>
+                <button class="btn bgray" style="font-size:0.67rem;padding:4px 8px" onclick="setTemplate('endterm')">📋 End of Term</button>
+              </div>
+            </div>
             <div class="ff full"><label>Message</label><textarea id="mTxt" rows="3" style="background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:9px;font-family:'DM Sans',sans-serif;font-size:0.82rem;width:100%;outline:none;resize:vertical" placeholder="Type your message..."></textarea></div>
           </div>
           <div class="fa">
@@ -873,7 +881,7 @@ function doLogin(){
     $('nBy').value=cu;$('wBy').value=cu;$('nDt').value=nd();
     term=CFG.term||2;
     renderComms();tick();setInterval(tick,1000);
-    loadStu();loadWks();loadReq();
+    loadStu();loadWks();loadReq();restoreMsgLog();
   } else {
     tries++;
     const rem=MAX-tries;
@@ -956,7 +964,7 @@ function isExpired(){const pkg=resolvePackage();if(pkg==='trial')return false;re
 async function loadConfig(){
   try{const res=await fetch('./config.json?t='+Date.now());CFG=await res.json();}
   catch(e){CFG={school:"Your School Name",motto:"Excellence in Education",badge:"",primaryColor:"#6b0f1a",accentColor:"#f0a500",phone:"07XXXXXXXX",location:"Kampala, Uganda",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",scriptUrl:"https://script.google.com/macros/s/AKfycbzmrg6C5OjTtsEZaxkXIskDdviS4G16paS9xO-hktghrKrsA_iu9ihDrhJDI_-LL-rc/exec",package:"starter",trialStart:"2025-06-05",trialEnd:"2025-06-19",termStart:"2025-06-01",termEnd:"2025-09-30",term:2,nexloraPhone:"+256751658855"};}
-  applyBranding();resolvePackage();checkTrialBanner();populateClassDropdowns();
+  applyBranding();resolvePackage();checkTrialBanner();populateClassDropdowns();populateClassDropdowns();
 }
 
 function applyBranding(){
@@ -988,16 +996,29 @@ function applyBranding(){
 function checkTrialBanner(){
   const pkg=resolvePackage();
   const banner=$('trialBanner');
+  const pill=$('pkgPill');
+  if(pill){
+    const labels={trial:'TRIAL',starter:'STARTER',pro:'PRO',premium:'PREMIUM'};
+    const colors={trial:'var(--accent)',starter:'rgba(255,255,255,0.3)',pro:'#2ab5a0',premium:'#9b59b6'};
+    pill.textContent=labels[EFFECTIVE_PKG]||'STARTER';
+    pill.style.background=colors[EFFECTIVE_PKG]||'rgba(255,255,255,0.12)';
+  }
   if(pkg==='trial'){
     const days=trialDaysLeft();
-    if(days<=3){banner.className='trial-banner urgent';banner.innerHTML=`🔴 Trial ends in ${days} day${days===1?'':'s'}! <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Update your system →</a>`;}
-    else if(days<=7){banner.className='trial-banner warning';banner.innerHTML=`🟠 ${days} days left in your free trial. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">View update options →</a>`;}
-    else{banner.className='trial-banner active';banner.innerHTML=`🎉 Free trial active — ${days} days remaining. Enjoying full Premium access!`;}
+    if(days<=0){
+      EFFECTIVE_PKG=CFG.package||'starter';
+      banner.className='trial-banner expired';
+      banner.innerHTML=`⛔ Free trial expired — now on <strong>${EFFECTIVE_PKG.toUpperCase()}</strong> plan. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Upgrade →</a>`;
+      if(pill){pill.textContent=EFFECTIVE_PKG.toUpperCase();pill.style.background='rgba(255,255,255,0.3)';}
+    }else if(days<=3){banner.className='trial-banner urgent';banner.innerHTML=`🔴 Trial ends in ${days} day${days===1?'':'s'}! Full Premium access. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Upgrade now →</a>`;}
+    else if(days<=7){banner.className='trial-banner warning';banner.innerHTML=`🟠 ${days} days left — Full Premium. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">View options →</a>`;}
+    else{banner.className='trial-banner active';banner.innerHTML=`🎉 Free trial — ${days} days remaining. Full Premium access!`;}
   }else if(isExpired()){
-    banner.className='trial-banner expired';banner.innerHTML=`⚠️ System update due. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Update now →</a>`;
+    banner.className='trial-banner expired';
+    banner.innerHTML=`⚠️ System update due. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">Update now →</a>`;
   }else{
     const days=termDaysLeft();
-    if(days<=14){banner.className='trial-banner warning';banner.innerHTML=`🟡 ${days} days until system update is due. <a href="#" onclick="showPage('update',null)" style="font-weight:700;text-decoration:underline">View options →</a>`;}
+    if(days<=14){banner.className='trial-banner warning';banner.innerHTML=`🟡 ${days} days until update due. Package: <strong>${EFFECTIVE_PKG.toUpperCase()}</strong>. <a href="#" onclick="showPage('update',null)">View options →</a>`;}
     else{banner.style.display='none';}
   }
   if($('daysLeftEl')){const d=resolvePackage()==='trial'?trialDaysLeft():termDaysLeft();$('daysLeftEl').textContent=isExpired()?'Expired':d+' days';$('daysLeftEl').style.color=d<=3?'var(--red)':d<=7?'var(--orange)':'var(--green)';}
@@ -1431,7 +1452,10 @@ function renderComms(){
 
 function showUpgradeNotice(f){toast(`🔒 ${f==='whatsapp'?'WhatsApp messaging':'This feature'} is available on Pro. See Software Update page.`,false);setTimeout(()=>showPage('update',null),1500);}
 
+const MSG_LOG_KEY='educore_msglog_v1';
 let msgLog=[];
+function loadMsgLog(){try{msgLog=JSON.parse(localStorage.getItem(MSG_LOG_KEY))||[];}catch(e){msgLog=[];}}
+function saveMsgLog(){try{localStorage.setItem(MSG_LOG_KEY,JSON.stringify(msgLog.slice(-50)));}catch(e){}}
 function sendMsg(channel,type){
   const targets=type==='balance'?stu.filter(s=>s.bal>0):
                 type==='thankyou'?stu.filter(s=>s.bal<=0&&s.fee>0):
@@ -1464,8 +1488,18 @@ function getRec(){
 }
 function logMsg(type,channel,cnt){
   msgLog.push({type,channel,cnt,time:nt(),by:cu});
-  const tb=$('mLog');const row=`<tr><td><span class="sbdg sbdg-inactive">${type}</span></td><td><span class="sbdg ${channel==='SMS'?'sbdg-suspended':'sbdg-active'}">${channel}</span></td><td>${cnt} parents</td><td>${nt()}</td><td>${cu}</td></tr>`;if(tb.querySelector('.lr'))tb.innerHTML='';tb.insertAdjacentHTML('afterbegin',row);
+  saveMsgLog();
+  const tb=$('mLog');
+  const row=`<tr><td><span class="sbdg sbdg-inactive">${type}</span></td><td><span class="sbdg ${channel==='SMS'?'sbdg-suspended':'sbdg-active'}">${channel}</span></td><td>${cnt} parents</td><td>${nt()}</td><td>${cu}</td></tr>`;
+  if(tb.querySelector('.lr'))tb.innerHTML='';
+  tb.insertAdjacentHTML('afterbegin',row);
   renderComms();
+}
+function restoreMsgLog(){
+  loadMsgLog();
+  const tb=$('mLog');
+  if(!msgLog.length)return;
+  tb.innerHTML=msgLog.slice().reverse().map(m=>`<tr><td><span class="sbdg sbdg-inactive">${m.type}</span></td><td><span class="sbdg ${m.channel==='SMS'?'sbdg-suspended':'sbdg-active'}">${m.channel}</span></td><td>${m.cnt} parents</td><td>${m.time}</td><td>${m.by}</td></tr>`).join('');
 }
 function sendCustom(){
   const txt=$('mTxt').value.trim();if(!txt){toast('⚠️ Please type a message',false);return;}
@@ -1481,6 +1515,15 @@ function sendCustom(){
   });
   logMsg('Custom',channel.toUpperCase(),r.length);
   toast(`✅ Sent to ${r.length} parent(s)`);
+}
+function setTemplate(type){
+  const templates={
+    paid:'Thank you for completing the school fees payment for your child. We appreciate your commitment to their education.',
+    balance:'Your child still has an outstanding fee balance. Kindly clear it at your earliest convenience to avoid any disruptions.',
+    partial:'Thank you for your recent payment. A balance remains on your child\'s account. Please clear it at the earliest opportunity.',
+    endterm:'The term is coming to an end. Please ensure all fees are cleared and all required items submitted. Thank you for your support.'
+  };
+  $('mTxt').value=templates[type]||'';$('mTxt').focus();
 }
 function previewMsg(){const r=getRec();if(!r.length){toast('No recipients',false);return;}const s=r[0],txt=$('mTxt').value||'[Your message]';alert(`PREVIEW (${r.length} recipients)\n\nDear ${s.parent},\n\n${txt}\n\n– EduCore by Nexlora Digital Systems`);}
 function contParent(id){const s=stu.find(x=>x.id===id);if(!s)return;const msg=`Dear ${s.parent}, this is a message from EduCore regarding ${s.name} (${s.cls}). Balance: UGX ${fm(s.bal)}.`;const ph=String(s.phone).replace(/\s/g,'');if(hasFeature('whatsapp')&&s.cont==='WhatsApp')window.open(`https://wa.me/256${ph.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`,'_blank');else window.open(`sms:${ph}?body=${encodeURIComponent(msg)}`,'_blank');}
