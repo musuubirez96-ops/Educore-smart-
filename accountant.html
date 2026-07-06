@@ -988,7 +988,7 @@ async function recordPayment(){
   clearPayForm();
   toast(`✅ UGX ${fm(amt)} recorded for ${name}!`);
   try{
-    await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'recordPayment',studentId:id,studentName:name,class:cls,amountPaid:amt,newBalance:newBal,date:nd(),time:nt(),receivedBy:cu,method:meth})});
+    await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'recordPayment',studentId:id,studentName:name,class:cls,amountPaid:amt,newBalance:newBal,date:nd(),time:nt(),receivedBy:cu,method:meth})});
   }catch(e){}
 }
 
@@ -1036,7 +1036,7 @@ async function recordExpense(){
   rExps();clearExpForm();
   toast(`✅ Expense of UGX ${fm(amt)} recorded`);
   try{
-    await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'recordExpense',description:desc,category:cat,amount:amt,date:nd(),time:nt(),approvedBy:apprv,recordedBy:cu})});
+    await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'recordExpense',description:desc,category:cat,amount:amt,date:nd(),time:nt(),approvedBy:apprv,recordedBy:cu})});
   }catch(e){}
 }
 
@@ -1112,7 +1112,7 @@ function payWk(id,type){
     rExps();rWks();
     sendWorkerMsg(w,w.amt,'Full Salary');
     toast(`✅ UGX ${fm(w.amt)} paid to ${w.name}`);
-    fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'payWorker',workerId:w.id,workerName:w.name,workerRole:w.role,payType:'Full',amount:w.amt,date:nd(),time:nt(),paidBy:cu,method:'Cash'})}).then(()=>loadSalaryApprovals());
+    fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'payWorker',workerId:w.id,workerName:w.name,workerRole:w.role,payType:'Full',amount:w.amt,date:nd(),time:nt(),paidBy:cu,method:'Cash'})}).then(()=>loadSalaryApprovals());
   }else{
     document.getElementById('advTitle').textContent=`Advance Payment — ${w.name}`;
     document.getElementById('advBody').innerHTML=`
@@ -1139,7 +1139,7 @@ function confirmAdv(id){
   rExps();rWks();closeMo('advMo');
   sendWorkerMsg(w,amt,'Salary Advance');
   toast(`✅ Advance of UGX ${fm(amt)} paid to ${w.name}`);
-  fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'payWorker',workerId:w.id,workerName:w.name,workerRole:w.role,payType:'Advance',amount:amt,date:nd(),time:nt(),paidBy:cu,method:'Cash'})}).then(()=>loadSalaryApprovals());
+  fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'payWorker',workerId:w.id,workerName:w.name,workerRole:w.role,payType:'Advance',amount:amt,date:nd(),time:nt(),paidBy:cu,method:'Cash'})}).then(()=>loadSalaryApprovals());
 }
 
 function sendWorkerMsg(w,amt,type){

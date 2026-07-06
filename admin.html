@@ -1204,7 +1204,7 @@ function setStuStatus(id, newStatus){
   rStuList();updStats();
   selectStu(id); // refresh detail panel
   toast(`✅ ${s.name} status → ${newStatus}`);
-  fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStatus',type:'student',id:s.id,status:newStatus})}).catch(()=>{});
+  fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStatus',type:'student',id:s.id,status:newStatus})}).catch(()=>{});
 }
 
 function editStu(id){
@@ -1239,7 +1239,7 @@ function saveEdit(id){
   closeMo('editMo');rStuList();rBal();updStats();
   if(selectedStuId===id)selectStu(id);
   toast(`✅ ${s.name} updated!`);
-  fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin})}).catch(()=>{});
+  fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin})}).catch(()=>{});
 }
 
 function delStu(id){
@@ -1258,7 +1258,7 @@ function clearSel(){sel.clear();updBulk();rStuList();}
 function updBulk(){$('bulkBar').style.display=sel.size>0?'flex':'none';$('selCount').textContent=`${sel.size} selected`;}
 function bulkFreeze(){
   if(!confirm(`Freeze ${sel.size} students?`))return;
-  sel.forEach(id=>{const s=stu.find(x=>x.id===id);if(s){s.status='Frozen';fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStatus',type:'student',id:s.id,status:'Frozen'})}).catch(()=>{});}});
+  sel.forEach(id=>{const s=stu.find(x=>x.id===id);if(s){s.status='Frozen';fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStatus',type:'student',id:s.id,status:'Frozen'})}).catch(()=>{});}});
   clearSel();rStuList();updStats();toast('❄️ Students frozen');
 }
 function bulkDel(){if(!confirm(`Delete ${sel.size} students?`))return;stu=stu.filter(x=>!sel.has(x.id));clearSel();rStuList();updStats();toast('🗑 Students deleted');}
@@ -1272,7 +1272,7 @@ async function addStudent(){
   s.bal=s.fee-s.paid;
   stu.push(s);rStuList();updStats();clearStuForm();
   toast(`✅ ${name} added!`);showPage('students',null);
-  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'addStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin,contactType:s.cont})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'addStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin,contactType:s.cont})});}
   catch(e){console.error('addStudent sync failed:',e);toast('⚠️ '+name+' saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 function clearStuForm(){['nId','nName','nParent','nPhone','nFee','nPaid','nPin','nEng','nMath','nSci','nSST'].forEach(id=>$(id).value='');}
@@ -1358,7 +1358,7 @@ function setWkStatus(id,newStatus){
   if(!confirm(`Change ${w.name}'s status to ${newStatus}?`))return;
   w.status=newStatus;rWkList();updStats();selectWk(id);
   toast(`✅ ${w.name} status → ${newStatus}`);
-  fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStatus',type:'worker',id:w.id,status:newStatus})}).catch(()=>{});
+  fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStatus',type:'worker',id:w.id,status:newStatus})}).catch(()=>{});
 }
 
 // Legacy compat
@@ -1387,7 +1387,7 @@ async function addWorker(){
   const w={id:'WK-'+String(wks.length+1).padStart(3,'0'),name,cat:cat.value,role:$('wRole').value,phone:$('wPhone').value,cont:$('wCont').value,payType:$('wPay').value,amt:parseFloat($('wAmt').value)||0,start:$('wStart').value||nd(),status:'Active'};
   wks.push(w);rWkList();updStats();clearWkForm();
   toast(`✅ ${name} registered!`);showPage('workers',document.querySelector('[onclick="showPage(\'workers\',this)"]'));
-  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'addWorker',name:w.name,category:w.cat,role:w.role,phone:w.phone,contactType:w.cont,payType:w.payType,payAmount:w.amt,startDate:w.start})});}catch(e){}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'addWorker',name:w.name,category:w.cat,role:w.role,phone:w.phone,contactType:w.cont,payType:w.payType,payAmount:w.amt,startDate:w.start})});}catch(e){}
 }
 function clearWkForm(){['wName','wPhone','wAmt'].forEach(id=>$(id).value='');$('wStart').value='';}
 
@@ -1576,7 +1576,7 @@ async function saveClassReq(){
   if(existing)existing.items=items;else req.push({cls,items});
   rReqList();rReq();
   toast(`✅ Requirements saved for ${cls}!`);
-  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateClassRequirements',cls,item1:items[0],item2:items[1],item3:items[2],item4:items[3],item5:items[4],item6:items[5]})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateClassRequirements',cls,item1:items[0],item2:items[1],item3:items[2],item4:items[3],item5:items[4],item6:items[5]})});}
   catch(e){console.error('updateClassRequirements sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
@@ -1633,7 +1633,7 @@ async function toggleReqItem(id,idx){
   if(!si){si={id,brought:[false,false,false,false,false,false]};stuItems.push(si);}
   si.brought[idx]=!si.brought[idx];
   rReq();
-  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:si.brought[0],item2:si.brought[1],item3:si.brought[2],item4:si.brought[3],item5:si.brought[4],item6:si.brought[5]})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:si.brought[0],item2:si.brought[1],item3:si.brought[2],item4:si.brought[3],item5:si.brought[4],item6:si.brought[5]})});}
   catch(e){console.error('updateStudentItems sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
@@ -1715,7 +1715,7 @@ async function saveReqChecklist(id,count){
   const existing=stuItems.find(x=>x.id===id);
   if(existing)existing.brought=brought;else stuItems.push({id,brought});
   rReq();closeMo('reqMo');toast('✅ Requirements saved!');
-  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:brought[0],item2:brought[1],item3:brought[2],item4:brought[3],item5:brought[4],item6:brought[5]})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:brought[0],item2:brought[1],item3:brought[2],item4:brought[3],item5:brought[4],item6:brought[5]})});}
   catch(e){console.error('updateStudentItems sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 

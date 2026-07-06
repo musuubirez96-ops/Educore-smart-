@@ -1681,12 +1681,14 @@ async function approveWorker(paymentId, workerName){
   renderWorkers(); renderPayrollSummary(); renderSalaryHistory();
   showToast(workerName + " salary approved ✅", "success");
   try{
-    const resp = await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({
+    await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({
       action:'approveSalary', paymentId, approvedBy:cu||'Principal', approvalDate
     })});
-    const r = await resp.json();
-    if(r.status !== 'success') showToast("Approved locally — sheet sync may be delayed","warning");
-  }catch(e){ showToast("Approved locally — will sync when connected","warning"); }
+    // Note: mode:'no-cors' means we can't read the response body to confirm
+    // server-side success/failure. If this becomes a problem (e.g. approvals
+    // that don't actually land in the Sheet), we need a different verification
+    // strategy — e.g. re-fetching salaryapprovals data after a short delay.
+  }catch(e){ console.error('approveSalary sync failed:',e); showToast("Approved locally ("+(e.message||'network error')+") — will sync when connected","warning"); }
 }
 
 function renderSalaryHistory(){
