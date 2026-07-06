@@ -7,9 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 :root{
-  --primary:#1D9E8C;--primary-light:#444;--primary-pale:#f0f0f0;
-  --accent:#D4A96A;--accent-pale:#fff8e7;
-  --bg:#f5f5dc;--card:#fff;
+  --primary:#2d2d2d;--primary-light:#444;--primary-pale:#f0f0f0;
+  --accent:#f0a500;--accent-pale:#fff8e7;
+  --bg:#f5f5f5;--card:#fff;
   --green:#1a7a4a;--green-pale:#d4efdf;
   --red:#b03a2e;--red-pale:#fadbd8;
   --orange:#d35400;--orange-pale:#fdebd0;
@@ -522,8 +522,15 @@ function termDaysLeft(){return Math.ceil((new Date(CFG.termEnd)-new Date())/(100
 function isExpired(){const p=resolvePackage();if(p==='trial')return false;return new Date()>new Date(CFG.termEnd);}
 
 async function loadConfig(){
-  try{const r=await fetch('./config.json?t='+Date.now());CFG=await r.json();}
-  catch(e){CFG={school:"Your School Name",motto:"Running schools Digitally",badge:"",primaryColor:"#1D9E8C",accentColor:"#D4A96A",phone:"07XXXXXXXX",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",scriptUrl:"https://script.google.com/macros/s/AKfycbzmrg6C5OjTtsEZaxkXIskDdviS4G16paS9xO-hktghrKrsA_iu9ihDrhJDI_-LL-rc/exec",package:"starter",trialStart:"2026-06-08",trialEnd:"2026-12-31",termStart:"2026-06-08",termEnd:"2026-09-30",term:2,nexloraPhone:"+256751658855"};}
+  try{
+    const r=await fetch('./config.json?t='+Date.now());
+    if(!r.ok) throw new Error('config.json HTTP '+r.status);
+    CFG=await r.json();
+  }catch(e){
+    console.error('loadConfig() failed, using fallback defaults:',e);
+    document.body.insertAdjacentHTML('afterbegin','<div style="background:#f8d7da;color:#721c24;padding:8px;text-align:center;font-size:13px;position:relative;z-index:9999;">⚠ config.json failed to load ('+e.message+') — showing fallback branding</div>');
+    CFG={school:"EduCore",motto:"Excellence in Education",badge:"https://i.imgur.com/LVxAXnl.png",primaryColor:"#1D9E8C",accentColor:"#D4A96A",bgColor:"#F5F0E8",phone:"07XXXXXXXX",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",scriptUrl:"https://script.google.com/macros/s/AKfycbwHXvABK4UGpqx-8LmM71t4WQ6gmt0XCWXBpspoDA4/exec",package:"starter",trialStart:"2026-06-08",trialEnd:"2026-06-22",termStart:"2026-06-08",termEnd:"2026-09-30",term:2,nexloraPhone:"+256751658855"};
+  }
   applyBranding();resolvePackage();checkTrialBanner();
 }
 

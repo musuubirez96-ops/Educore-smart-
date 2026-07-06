@@ -657,15 +657,16 @@ table tbody tr:hover{background:var(--bg);}
 <script>
 /* ===================== CONFIG & GLOBAL STATE ===================== */
 let CFG = {
-  school:"Demo Primary School",
+  school:"EduCore",
   motto:"Excellence in Education",
-  badge:"https://placehold.co/48x48/2d2d2d/f0a500?text=E",
-  primaryColor:"#2d2d2d",
-  accentColor:"#f0a500",
+  badge:"https://i.imgur.com/LVxAXnl.png",
+  primaryColor:"#1D9E8C",
+  accentColor:"#D4A96A",
+  bgColor:"#F5F0E8",
   phone:"+256700000000",
   location:"Kampala, Uganda",
   sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",
-  scriptUrl:"https://script.google.com/macros/s/AKfycbzmrg6C5OjTtsEZaxkXIskDdviS4G16paS9xO-hktghrKrsA_iu9ihDrhJDI_-LL-rc/exec",
+  scriptUrl:"https://script.google.com/macros/s/AKfycbwHXvABK4UGpqx-8LmM71t4WQ6gmt0XCWXBpspoDA4/exec",
   package:"trial",
   trialStart:"",
   trialEnd:"",
@@ -886,13 +887,13 @@ function signOut(){
 /* ===================== CONFIG LOADING ===================== */
 async function loadConfig(){
   try{
-    const res = await fetch("config.json", {cache:"no-store"});
-    if(res.ok){
-      const json = await res.json();
-      CFG = Object.assign(CFG, json);
-    }
+    const res = await fetch("./config.json", {cache:"no-store"});
+    if(!res.ok) throw new Error("config.json HTTP "+res.status);
+    const json = await res.json();
+    CFG = Object.assign(CFG, json);
   }catch(e){
-    console.warn("config.json not found, using defaults", e);
+    console.error("loadConfig() failed, using fallback defaults:", e);
+    document.body.insertAdjacentHTML('afterbegin','<div style="background:#f8d7da;color:#721c24;padding:8px;text-align:center;font-size:13px;position:relative;z-index:9999;">⚠ config.json failed to load ('+e.message+') — showing fallback branding</div>');
   }
   applyConfig();
 }
