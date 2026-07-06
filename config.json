@@ -15,7 +15,7 @@
   "termStart": "2026-06-08",
   "termEnd": "2026-12-31",
   "term": 2,
-  "institutionType": "primary",
+  "institutionType": "secondary",
   "nexloraPhone": "+256751658855",
   "features": {
     "starter": ["students", "workers", "expenses", "feeTracking", "sms", "basicAnalytics"],
