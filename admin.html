@@ -1272,7 +1272,8 @@ async function addStudent(){
   s.bal=s.fee-s.paid;
   stu.push(s);rStuList();updStats();clearStuForm();
   toast(`✅ ${name} added!`);showPage('students',null);
-  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'addStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin,contactType:s.cont})});}catch(e){}
+  try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'addStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin,contactType:s.cont})});}
+  catch(e){console.error('addStudent sync failed:',e);toast('⚠️ '+name+' saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 function clearStuForm(){['nId','nName','nParent','nPhone','nFee','nPaid','nPin','nEng','nMath','nSci','nSST'].forEach(id=>$(id).value='');}
 
@@ -1576,7 +1577,7 @@ async function saveClassReq(){
   rReqList();rReq();
   toast(`✅ Requirements saved for ${cls}!`);
   try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateClassRequirements',cls,item1:items[0],item2:items[1],item3:items[2],item4:items[3],item5:items[4],item6:items[5]})});}
-  catch(e){toast('⚠️ Saved locally — will sync when connected',false);}
+  catch(e){console.error('updateClassRequirements sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
 function gradeNum(cls){const m=String(cls||'').match(/\d+/);return m?m[0]:'';}
@@ -1633,7 +1634,7 @@ async function toggleReqItem(id,idx){
   si.brought[idx]=!si.brought[idx];
   rReq();
   try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:si.brought[0],item2:si.brought[1],item3:si.brought[2],item4:si.brought[3],item5:si.brought[4],item6:si.brought[5]})});}
-  catch(e){toast('⚠️ Saved locally — will sync when connected',false);}
+  catch(e){console.error('updateStudentItems sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
 function rReq(){
@@ -1715,7 +1716,7 @@ async function saveReqChecklist(id,count){
   if(existing)existing.brought=brought;else stuItems.push({id,brought});
   rReq();closeMo('reqMo');toast('✅ Requirements saved!');
   try{await fetch(CFG.scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:brought[0],item2:brought[1],item3:brought[2],item4:brought[3],item5:brought[4],item6:brought[5]})});}
-  catch(e){toast('⚠️ Saved locally — will sync when connected',false);}
+  catch(e){console.error('updateStudentItems sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
 // ═══════════════════════════════════════════════════
