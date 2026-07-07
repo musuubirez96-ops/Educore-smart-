@@ -627,13 +627,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="fc">
           <div class="fct">➕ Add / Edit Class Requirements</div>
           <div class="fg">
-            <div class="ff"><label>Class</label><input type="text" id="rqClass" list="rqClassList" placeholder="Type or pick a class"/><datalist id="rqClassList"></datalist></div>
-            <div class="ff"><label>Item 1</label><input type="text" id="rqI1" placeholder="e.g. School Uniform"/></div>
-            <div class="ff"><label>Item 2</label><input type="text" id="rqI2" placeholder="e.g. Broom"/></div>
-            <div class="ff"><label>Item 3</label><input type="text" id="rqI3" placeholder="optional"/></div>
-            <div class="ff"><label>Item 4</label><input type="text" id="rqI4" placeholder="optional"/></div>
-            <div class="ff"><label>Item 5</label><input type="text" id="rqI5" placeholder="optional"/></div>
-            <div class="ff"><label>Item 6</label><input type="text" id="rqI6" placeholder="optional"/></div>
+            <div class="ff"><label>Class</label><input type="text" id="rqClass" list="rqClassList" placeholder="Type or pick a class" oninput="onRqClassChange()"/><datalist id="rqClassList"></datalist></div>
+          </div>
+          <div id="rqItemsList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+          <div class="fa" style="margin-top:10px">
+            <button class="btn boutline" type="button" onclick="addReqItemRow()">+ Add Item</button>
           </div>
           <div class="fa">
             <button class="btn boutline" onclick="clearReqForm()">Clear</button>
@@ -659,8 +657,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="fc">
           <div class="fct">🎒 Class Requirements List</div>
           <div class="tw"><table>
-            <thead><tr><th>Class</th><th>Item 1</th><th>Item 2</th><th>Item 3</th><th>Item 4</th><th>Item 5</th><th>Item 6</th></tr></thead>
-            <tbody id="reqListBody"><tr class="lr"><td colspan="7">Loading requirements...</td></tr></tbody>
+            <thead><tr><th>Class</th><th>Items</th></tr></thead>
+            <tbody id="reqListBody"><tr class="lr"><td colspan="2">Loading requirements...</td></tr></tbody>
           </table></div>
         </div>
         <div class="fc">
@@ -777,6 +775,32 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 let CFG = {}, EFFECTIVE_PKG = 'starter';
 let cu = '', term = 2;
 let stu = [], wks = [], req = [], stuItems = [];
+
+// ═══════════════════════════════════════════════════
+// REQUIREMENTS — default item templates per institution
+// type. Used to prefill NEW class requirement lists;
+// admin can freely add/remove/edit items afterward.
+// ═══════════════════════════════════════════════════
+const REQ_TEMPLATES = {
+  primary: ['School Uniform','Exercise Books','Pencil & Pen','School Bag','Clean Uniform','School Shoes'],
+  secondary: ['School Uniform','Textbooks','Calculator','Lab Coat','Games Kit','Mattress'],
+  kindergarten: ['Nap Mat','Extra Clothes','Snack Box','Diapers / Wipes','Water Bottle'],
+  tertiary: ['Student ID Card','Lab Coat','Calculator','Textbooks','Stationery Set']
+};
+function getReqTemplate(){
+  const t=(CFG.institutionType||'primary').toLowerCase();
+  return (REQ_TEMPLATES[t]||REQ_TEMPLATES.primary).slice();
+}
+// Groups a class into its "base grade" for requirements matching,
+// so streams (P.4A / P.4B, S3A / S3B) share one requirements list
+// while institution types with no stream letter (kindergarten,
+// tertiary) are matched by their full class name. No hardcoded
+// primary-only assumption — works for any institutionType.
+function reqBaseClass(cls){
+  const c=String(cls||'').trim();
+  const m=c.match(/^(.*\d)[A-Za-z]$/);
+  return m?m[1]:c;
+}
 let stuFilter = 'all', wkFilter = 'all';
 let selectedStuId = null, selectedWkId = null;
 let sel = new Set(), tries = 0;
@@ -882,6 +906,7 @@ function doLogin(){
     term=CFG.term||2;
     renderComms();tick();setInterval(tick,1000);
     loadStu();loadWks();loadReq();restoreMsgLog();
+    if($('rqItemsList')&&!$('rqItemsList').children.length)renderReqItemRows(getReqTemplate());
   } else {
     tries++;
     const rem=MAX-tries;
@@ -1076,18 +1101,20 @@ async function loadWks(){
 async function loadReq(){
   try{
     const rows=await fetchGviz('requirements');
-    req=rows.filter(r=>r[0]&&r[0]!=='CLASS').map(r=>({
-      cls:String(r[0]||'').trim(),
-      items:[r[1],r[2],r[3],r[4],r[5],r[6]].map(v=>String(v||'').trim()).filter(v=>v)
-    }));
+    req=rows.filter(r=>r[0]&&r[0]!=='Class'&&r[0]!=='CLASS').map(r=>{
+      let items=[];
+      try{items=JSON.parse(r[1]||'[]');}catch(e){items=[];}
+      return {cls:String(r[0]||'').trim(), items:(items||[]).map(v=>String(v||'').trim()).filter(v=>v)};
+    });
     rReqList();
   }catch(e){console.log('req error',e);}
   try{
     const rows2=await fetchGviz('studentitems');
-    stuItems=rows2.filter(r=>r[0]&&r[0]!=='StudentID').map(r=>({
-      id:String(r[0]||'').trim(),
-      brought:[r[1],r[2],r[3],r[4],r[5],r[6]].map(v=>{const s=String(v||'').trim().toLowerCase();return s==='true'||s==='yes'||s==='1';})
-    }));
+    stuItems=rows2.filter(r=>r[0]&&r[0]!=='StudentID').map(r=>{
+      let brought=[];
+      try{brought=JSON.parse(r[1]||'[]');}catch(e){brought=[];}
+      return {id:String(r[0]||'').trim(), brought:(brought||[]).map(v=>!!v)};
+    });
     rReq();
   }catch(e){console.log('stuItems error',e);}
 }
@@ -1541,47 +1568,85 @@ function contParent(id){const s=stu.find(x=>x.id===id);if(!s)return;const msg=`D
 // ═══════════════════════════════════════════════════
 function rReqList(){
   const tb=$('reqListBody');
-  if(!req.length){tb.innerHTML='<tr class="lr"><td colspan="7">No requirements set yet.</td></tr>';return;}
+  if(!req.length){tb.innerHTML='<tr class="lr"><td colspan="2">No requirements set yet.</td></tr>';return;}
   tb.innerHTML=req.map(r=>{
-    const cells=[0,1,2,3,4,5].map(i=>`<td>${r.items[i]||'—'}</td>`).join('');
-    return `<tr style="cursor:pointer" onclick="loadReqForEdit('${r.cls}')"><td><strong>${r.cls}</strong></td>${cells}</tr>`;
+    const itemsStr=r.items.length?r.items.join(', '):'—';
+    return `<tr style="cursor:pointer" onclick="loadReqForEdit('${r.cls}')"><td><strong>${r.cls}</strong></td><td>${itemsStr}</td></tr>`;
   }).join('');
+}
+
+// ── Dynamic item row builder ─────────────────────────
+function renderReqItemRows(items){
+  const wrap=$('rqItemsList');
+  if(!items||!items.length)items=[''];
+  wrap.innerHTML=items.map(val=>`
+    <div class="ff" style="display:flex;gap:6px;align-items:center;margin:0">
+      <input type="text" class="rqItemInput" value="${String(val||'').replace(/"/g,'&quot;')}" placeholder="e.g. School Uniform" style="flex:1"/>
+      <button type="button" class="btn boutline" style="padding:6px 10px" onclick="removeReqItemRow(this)">✕</button>
+    </div>`).join('');
+}
+function addReqItemRow(){
+  const wrap=$('rqItemsList');
+  const div=document.createElement('div');
+  div.className='ff';div.style.cssText='display:flex;gap:6px;align-items:center;margin:0';
+  div.innerHTML=`<input type="text" class="rqItemInput" placeholder="New item" style="flex:1"/><button type="button" class="btn boutline" style="padding:6px 10px" onclick="removeReqItemRow(this)">✕</button>`;
+  wrap.appendChild(div);
+  div.querySelector('input').focus();
+}
+function removeReqItemRow(btn){
+  const wrap=$('rqItemsList');
+  if(wrap.children.length<=1){btn.parentElement.querySelector('input').value='';return;}
+  btn.parentElement.remove();
+}
+function collectReqItems(){
+  return [...document.querySelectorAll('#rqItemsList .rqItemInput')].map(i=>i.value.trim()).filter(v=>v);
+}
+function onRqClassChange(){
+  const cls=$('rqClass').value.trim();
+  if(!cls){renderReqItemRows(getReqTemplate());return;}
+  const existing=req.find(r=>r.cls.toLowerCase()===cls.toLowerCase());
+  renderReqItemRows(existing&&existing.items.length?existing.items:getReqTemplate());
 }
 
 function clearReqForm(){
   $('rqClass').value='';
-  for(let i=1;i<=6;i++)$('rqI'+i).value='';
+  renderReqItemRows(getReqTemplate());
 }
 
 function populateRqClassList(){
   const dl=$('rqClassList');if(!dl)return;
-  const fallback=['P.1A','P.1B','P.2A','P.2B','P.3A','P.3B','P.3C','P.4A','P.4B','P.5A','P.5B','P.6A','P.6B','P.7A','P.7B'];
+  const fallback=generateAcademicLevels();
   const real=stu.map(s=>s.cls).filter(Boolean);
   const all=[...new Set([...real,...fallback])].sort();
   dl.innerHTML=all.map(c=>`<option value="${c}">`).join('');
 }
 
 function loadReqForEdit(cls){
-  const r=getReqForClass(cls);if(!r)return;
+  const r=req.find(x=>x.cls.toLowerCase()===String(cls).toLowerCase());if(!r)return;
   $('rqClass').value=r.cls;
-  for(let i=1;i<=6;i++)$('rqI'+i).value=r.items[i-1]||'';
+  renderReqItemRows(r.items.length?r.items:getReqTemplate());
   toast(`Editing requirements for ${cls}`);
 }
 
 async function saveClassReq(){
-  const cls=$('rqClass').value;
-  const items=[1,2,3,4,5,6].map(i=>$('rqI'+i).value.trim());
-  if(!items[0]){toast('⚠️ Please enter at least Item 1',false);return;}
+  const cls=$('rqClass').value.trim();
+  if(!cls){toast('⚠️ Please enter a class',false);return;}
+  const items=collectReqItems();
+  if(!items.length){toast('⚠️ Please add at least one item',false);return;}
   const existing=req.find(r=>r.cls.toLowerCase()===cls.toLowerCase());
   if(existing)existing.items=items;else req.push({cls,items});
   rReqList();rReq();
   toast(`✅ Requirements saved for ${cls}!`);
-  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateClassRequirements',cls,item1:items[0],item2:items[1],item3:items[2],item4:items[3],item5:items[4],item6:items[5]})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateClassRequirements',cls,items})});}
   catch(e){console.error('updateClassRequirements sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
-function gradeNum(cls){const m=String(cls||'').match(/\d+/);return m?m[0]:'';}
-function getReqForClass(cls){const g=gradeNum(cls);if(!g)return null;return req.find(r=>gradeNum(r.cls)===g)||null;}
+function getReqForClass(cls){
+  const base=reqBaseClass(cls).toLowerCase();
+  return req.find(r=>reqBaseClass(r.cls).toLowerCase()===base)
+      || req.find(r=>r.cls.toLowerCase()===String(cls||'').trim().toLowerCase())
+      || null;
+}
 function getStuItems(id){return stuItems.find(x=>x.id===id)||null;}
 
 let qrLastOpened=null;
@@ -1630,10 +1695,10 @@ function setReqClassFilter(label){reqClassFilter=label;rReq();}
 
 async function toggleReqItem(id,idx){
   let si=stuItems.find(x=>x.id===id);
-  if(!si){si={id,brought:[false,false,false,false,false,false]};stuItems.push(si);}
+  if(!si){si={id,brought:[]};stuItems.push(si);}
   si.brought[idx]=!si.brought[idx];
   rReq();
-  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:si.brought[0],item2:si.brought[1],item3:si.brought[2],item4:si.brought[3],item5:si.brought[4],item6:si.brought[5]})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudentItems',studentId:id,brought:si.brought})});}
   catch(e){console.error('updateStudentItems sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
@@ -1642,14 +1707,14 @@ function rReq(){
   populateRqClassList();
   const activeList=stu.filter(s=>s.status!=='Expelled');
 
-  const grades=[...new Set(activeList.map(s=>gradeNum(s.cls)).filter(Boolean))].sort((a,b)=>a-b);
-  $('reqClassChips').innerHTML=['All',...grades.map(g=>'P.'+g)].map(label=>
+  const grades=[...new Set(activeList.map(s=>reqBaseClass(s.cls)).filter(Boolean))].sort();
+  $('reqClassChips').innerHTML=['All',...grades].map(label=>
     `<span class="fchip ${label===reqClassFilter?'active':''}" onclick="setReqClassFilter('${label}')">${label}</span>`
   ).join('');
 
   const q=($('reqSearch')||{value:''}).value.trim().toLowerCase();
   let list=activeList;
-  if(reqClassFilter!=='All')list=list.filter(s=>gradeNum(s.cls)===reqClassFilter.replace('P.',''));
+  if(reqClassFilter!=='All')list=list.filter(s=>reqBaseClass(s.cls)===reqClassFilter);
   if(q)list=list.filter(s=>s.name.toLowerCase().includes(q)||s.id.toLowerCase().includes(q));
 
   const body=$('reqStuBody');
@@ -1662,21 +1727,21 @@ function rReq(){
   let fullyEquipped=0,itemsMissing=0;
   body.innerHTML=list.map(s=>{
     const r=getReqForClass(s.cls);const si=getStuItems(s.id);
-    if(!r||!r.items.filter(Boolean).length){
+    if(!r||!r.items.length){
       return `<div class="req-card">
         <div class="req-card-head"><div class="req-card-name">${s.name}</div><span class="sbdg sbdg-inactive">${s.cls}</span></div>
         <p style="color:var(--text-dim);font-size:0.78rem;margin:0">No requirements list set for this class yet.</p>
       </div>`;
     }
-    const total=r.items.filter(Boolean).length;
-    const brought=si?si.brought:[false,false,false,false,false,false];
-    const broughtCount=r.items.reduce((acc,item,i)=>item&&brought[i]?acc+1:acc,0);
+    const total=r.items.length;
+    const brought=si?si.brought:[];
+    const broughtCount=r.items.reduce((acc,item,i)=>brought[i]?acc+1:acc,0);
     fullyEquipped+=broughtCount>=total?1:0;
     itemsMissing+=total-broughtCount;
     const state=broughtCount>=total?'complete':broughtCount>0?'partial':'missing';
     const pct=total?Math.round(broughtCount/total*100):0;
     const fillColor=state==='complete'?'var(--green)':state==='partial'?'var(--orange)':'var(--red)';
-    const itemsHtml=r.items.map((item,i)=>!item?'':`
+    const itemsHtml=r.items.map((item,i)=>`
       <div class="req-check-item ${brought[i]?'checked':''}" onclick="toggleReqItem('${s.id}',${i})">
         <input type="checkbox" class="req-toggle" ${brought[i]?'checked':''} readonly>
         <label>${item}</label>
@@ -1694,28 +1759,28 @@ function rReq(){
 function openReqChecklist(id){
   const s=stu.find(x=>x.id===id);if(!s)return;
   const r=getReqForClass(s.cls);
-  if(!r||!r.items.filter(Boolean).length){toast('No requirements list for class '+s.cls,false);return;}
+  if(!r||!r.items.length){toast('No requirements list for class '+s.cls,false);return;}
   const si=getStuItems(s.id);
   $('reqMoTitle').textContent=`${s.name} — ${s.cls}`;
-  $('reqMoBody').innerHTML=r.items.map((item,i)=>item?`
+  $('reqMoBody').innerHTML=r.items.map((item,i)=>`
     <div class="req-check-item">
       <input type="checkbox" id="rc${i}" ${si&&si.brought[i]?'checked':''}>
       <label for="rc${i}">${item}</label>
-    </div>`:'').join('')+`
+    </div>`).join('')+`
     <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
       <button class="btn boutline" onclick="closeMo('reqMo')">Cancel</button>
-      <button class="btn bdark" onclick="saveReqChecklist('${id}',6)">💾 Save</button>
+      <button class="btn bdark" onclick="saveReqChecklist('${id}',${r.items.length})">💾 Save</button>
     </div>`;
   $('reqMo').classList.add('open');
 }
 
 async function saveReqChecklist(id,count){
   const brought=[];
-  for(let i=0;i<6;i++){const cb=$('rc'+i);brought.push(i<count&&cb?cb.checked:false);}
+  for(let i=0;i<count;i++){const cb=$('rc'+i);brought.push(cb?cb.checked:false);}
   const existing=stuItems.find(x=>x.id===id);
   if(existing)existing.brought=brought;else stuItems.push({id,brought});
   rReq();closeMo('reqMo');toast('✅ Requirements saved!');
-  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudentItems',studentId:id,item1:brought[0],item2:brought[1],item3:brought[2],item4:brought[3],item5:brought[4],item6:brought[5]})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudentItems',studentId:id,brought})});}
   catch(e){console.error('updateStudentItems sync failed:',e);toast('⚠️ Saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
 
