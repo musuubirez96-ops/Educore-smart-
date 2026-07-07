@@ -794,12 +794,14 @@ function getReqTemplate(){
 // Groups a class into its "base grade" for requirements matching,
 // so streams (P.4A / P.4B, S3A / S3B) share one requirements list
 // while institution types with no stream letter (kindergarten,
-// tertiary) are matched by their full class name. No hardcoded
-// primary-only assumption — works for any institutionType.
+// tertiary) are matched by their full class name. Normalizes away
+// spacing/punctuation inconsistencies (e.g. "P.4B" and "P4.B" are
+// treated as the same class) since real school data is rarely
+// typed consistently. No hardcoded primary-only assumption.
 function reqBaseClass(cls){
-  const c=String(cls||'').trim();
-  const m=c.match(/^(.*\d)[A-Za-z]$/);
-  return m?m[1]:c;
+  const norm=String(cls||'').trim().toUpperCase().replace(/[.\s]/g,'');
+  const m=norm.match(/^(.*\d)[A-Z]$/);
+  return m?m[1]:norm;
 }
 let stuFilter = 'all', wkFilter = 'all';
 let selectedStuId = null, selectedWkId = null;
@@ -1707,10 +1709,16 @@ function rReq(){
   populateRqClassList();
   const activeList=stu.filter(s=>s.status!=='Expelled');
 
-  const grades=[...new Set(activeList.map(s=>reqBaseClass(s.cls)).filter(Boolean))].sort();
-  $('reqClassChips').innerHTML=['All',...grades].map(label=>
-    `<span class="fchip ${label===reqClassFilter?'active':''}" onclick="setReqClassFilter('${label}')">${label}</span>`
-  ).join('');
+  const baseLabels={}; // normalized key -> first-seen readable class string
+  activeList.forEach(s=>{
+    const key=reqBaseClass(s.cls);
+    if(key&&!(key in baseLabels))baseLabels[key]=s.cls;
+  });
+  const gradeKeys=Object.keys(baseLabels).sort();
+  $('reqClassChips').innerHTML=['All',...gradeKeys].map(key=>{
+    const label=key==='All'?'All':baseLabels[key];
+    return `<span class="fchip ${key===reqClassFilter?'active':''}" onclick="setReqClassFilter('${key}')">${label}</span>`;
+  }).join('');
 
   const q=($('reqSearch')||{value:''}).value.trim().toLowerCase();
   let list=activeList;
