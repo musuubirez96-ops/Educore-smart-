@@ -406,6 +406,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="uinfo" style="min-width:0"><div class="uname" id="sName">Admin</div><div class="urole">School Admin</div></div>
       <div class="odot"></div>
     </div>
+    <div style="padding:8px 16px 12px">
+      <label style="font-size:0.62rem;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:4px">School Level</label>
+      <select id="levelOverride" onchange="setLevelOverride(this.value)" style="width:100%;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.12);color:#fff;font-size:0.78rem;font-family:'DM Sans',sans-serif">
+        <option value="">Use config.json default</option>
+        <option value="primary">Primary</option>
+        <option value="secondary">Secondary</option>
+        <option value="kindergarten">Kindergarten</option>
+        <option value="tertiary">Tertiary</option>
+      </select>
+    </div>
     <nav class="snav">
       <div class="nlbl">Students</div>
       <div class="ni active" onclick="showPage('students',this)">
@@ -788,8 +798,34 @@ const REQ_TEMPLATES = {
   tertiary: ['Student ID Card','Lab Coat','Calculator','Textbooks','Stationery Set']
 };
 function getReqTemplate(){
-  const t=(CFG.institutionType||'primary').toLowerCase();
+  const t=getEffectiveInstitutionType();
   return (REQ_TEMPLATES[t]||REQ_TEMPLATES.primary).slice();
+}
+// ── Per-device School Level override ─────────────────
+// Lets the admin instantly switch institution type on
+// THIS device (localStorage), without editing config.json
+// or re-uploading to GitHub. Falls back to config.json's
+// institutionType if no override is set. Affects only the
+// class dropdown suggestions and default requirement
+// templates — never touches already-saved student/
+// requirements data, which is always matched by its own
+// stored class string regardless of this setting.
+const LEVEL_OVERRIDE_KEY='educore_admin_levelOverride';
+function getLevelOverride(){return localStorage.getItem(LEVEL_OVERRIDE_KEY)||'';}
+function getEffectiveInstitutionType(){
+  return (getLevelOverride() || CFG.institutionType || 'primary').toLowerCase();
+}
+function setLevelOverride(val){
+  if(val)localStorage.setItem(LEVEL_OVERRIDE_KEY,val);
+  else localStorage.removeItem(LEVEL_OVERRIDE_KEY);
+  toast(val?`School Level set to ${val} (this device only)`:'Using config.json default level');
+  populateClassDropdowns();
+  if($('rqItemsList'))clearReqForm();
+  if($('reqStuBody'))rReq();
+}
+function initLevelOverrideUI(){
+  const sel=$('levelOverride');if(!sel)return;
+  sel.value=getLevelOverride();
 }
 // Groups a class into its "base grade" for requirements matching,
 // so streams (P.4A / P.4B, S3A / S3B) share one requirements list
@@ -953,7 +989,7 @@ function exportStudentsCSV(){
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='students_'+nd().replace(/\//g,'-')+'.csv';a.click();
 }
 function generateAcademicLevels(){
-  const type=(CFG.institutionType||'primary').toLowerCase();
+  const type=getEffectiveInstitutionType();
   if(CFG.customLevels&&Array.isArray(CFG.customLevels)&&CFG.customLevels.length){
     return CFG.customLevels;
   }
@@ -968,7 +1004,7 @@ function generateAcademicLevels(){
   }
   // default: primary
   const out=[];for(let i=1;i<=7;i++){out.push('P.'+i+'A');out.push('P.'+i+'B');}
-  if(!CFG.institutionType)out.splice(5,0,'P.3C'); // preserve original Eden P.3C option for backward compat
+  if(!CFG.institutionType&&!getLevelOverride())out.splice(5,0,'P.3C'); // preserve original Eden P.3C option for backward compat
   return out;
 }
 
@@ -998,7 +1034,7 @@ async function loadConfig(){
     document.body.insertAdjacentHTML('afterbegin','<div style="background:#f8d7da;color:#721c24;padding:8px;text-align:center;font-size:13px;position:relative;z-index:9999;">⚠ config.json failed to load ('+e.message+') — showing fallback branding</div>');
     CFG={school:"EduCore",motto:"Excellence in Education",badge:"https://i.imgur.com/LVxAXnl.png",primaryColor:"#1D9E8C",accentColor:"#D4A96A",bgColor:"#F5F0E8",phone:"07XXXXXXXX",location:"Kampala, Uganda",sheetId:"1xyxccJv5_KHPRlU_5m34hBKJORR3YX9dzSCRkmOASUA",scriptUrl:"https://script.google.com/macros/s/AKfycbwHXvABK4UGpqx-8LmM71t4WQ6gmt0XCWXBpspoDA4/exec",package:"starter",trialStart:"2026-06-08",trialEnd:"2026-06-22",termStart:"2026-06-08",termEnd:"2026-09-30",term:2,nexloraPhone:"+256751658855"};
   }
-  applyBranding();resolvePackage();checkTrialBanner();populateClassDropdowns();populateClassDropdowns();
+  applyBranding();resolvePackage();checkTrialBanner();populateClassDropdowns();initLevelOverrideUI();
 }
 
 function applyBranding(){
