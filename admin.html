@@ -547,12 +547,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             <div class="ff"><label>Term Fee (UGX)</label><input type="number" id="nFee" placeholder="0"/></div>
             <div class="ff"><label>Amount Paid (UGX)</label><input type="number" id="nPaid" placeholder="0"/></div>
             <div class="ff"><label>Parent PIN</label><input type="text" id="nPin" placeholder="4-digit PIN"/></div>
-            <div class="ff"><label>English</label><input type="number" id="nEng" placeholder="0-100"/></div>
-            <div class="ff"><label>Math</label><input type="number" id="nMath" placeholder="0-100"/></div>
-            <div class="ff"><label>Science</label><input type="number" id="nSci" placeholder="0-100"/></div>
-            <div class="ff"><label>SST</label><input type="number" id="nSST" placeholder="0-100"/></div>
             <div class="ff"><label>Added By</label><input type="text" id="nBy" readonly/></div>
             <div class="ff"><label>Date</label><input type="text" id="nDt" readonly/></div>
+          </div>
+          <div style="margin-top:12px">
+            <label style="font-size:0.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.03em">Subjects & Scores</label>
+            <div id="nSubjectsList" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+            <button type="button" class="btn boutline" style="margin-top:8px" onclick="addSubjectRow('nSubjectsList')">+ Add Subject</button>
           </div>
           <div class="fa">
             <button class="btn boutline" onclick="clearStuForm()">Clear</button>
@@ -801,6 +802,62 @@ function getReqTemplate(){
   const t=getEffectiveInstitutionType();
   return (REQ_TEMPLATES[t]||REQ_TEMPLATES.primary).slice();
 }
+
+// ═══════════════════════════════════════════════════
+// SUBJECTS — default subject templates per institution
+// type, same pattern as Requirements. Admin can freely
+// add/remove/rename subjects afterward; this is only a
+// starting point for a brand-new student's form.
+// ═══════════════════════════════════════════════════
+const SUBJECT_TEMPLATES = {
+  primary: ['English','Math','Science','SST'],
+  secondary: ['English','Math','Physics','Chemistry','Biology','History','Geography'],
+  kindergarten: ['Literacy','Numeracy','Social Skills','Motor Skills'],
+  tertiary: ['Unit 1','Unit 2','Unit 3','Unit 4']
+};
+function getSubjectTemplate(){
+  const t=getEffectiveInstitutionType();
+  return (SUBJECT_TEMPLATES[t]||SUBJECT_TEMPLATES.primary).slice();
+}
+function subjAvg(s){
+  if(!s.subjects||!s.subjects.length)return 0;
+  return Math.round(s.subjects.reduce((a,x)=>a+(Number(x.score)||0),0)/s.subjects.length);
+}
+// Dynamic subject-row builder — reused by both the Add
+// Student form and the Edit Student modal via containerId.
+function renderSubjectRows(containerId,subjects){
+  const wrap=$(containerId);if(!wrap)return;
+  if(!subjects||!subjects.length)subjects=getSubjectTemplate().map(name=>({name,score:''}));
+  wrap.innerHTML=subjects.map(sub=>`
+    <div class="ff" style="display:flex;gap:6px;align-items:center;margin:0">
+      <input type="text" class="subjNameInput" value="${String(sub.name||'').replace(/"/g,'&quot;')}" placeholder="Subject name" style="flex:2"/>
+      <input type="number" class="subjScoreInput" value="${sub.score===''||sub.score===undefined||sub.score===null?'':sub.score}" placeholder="0-100" min="0" max="100" style="flex:1"/>
+      <button type="button" class="btn boutline" style="padding:6px 10px" onclick="removeSubjectRow(this)">✕</button>
+    </div>`).join('');
+}
+function addSubjectRow(containerId){
+  const wrap=$(containerId);if(!wrap)return;
+  const div=document.createElement('div');
+  div.className='ff';div.style.cssText='display:flex;gap:6px;align-items:center;margin:0';
+  div.innerHTML=`<input type="text" class="subjNameInput" placeholder="Subject name" style="flex:2"/><input type="number" class="subjScoreInput" placeholder="0-100" min="0" max="100" style="flex:1"/><button type="button" class="btn boutline" style="padding:6px 10px" onclick="removeSubjectRow(this)">✕</button>`;
+  wrap.appendChild(div);
+  div.querySelector('input').focus();
+}
+function removeSubjectRow(btn){
+  const row=btn.parentElement,wrap=row.parentElement;
+  if(wrap.children.length<=1){row.querySelectorAll('input').forEach(i=>i.value='');return;}
+  row.remove();
+}
+function collectSubjects(containerId){
+  const wrap=$(containerId);if(!wrap)return[];
+  return[...wrap.children].map(row=>{
+    const nameInput=row.querySelector('.subjNameInput');
+    const scoreInput=row.querySelector('.subjScoreInput');
+    const name=nameInput?nameInput.value.trim():'';
+    const score=scoreInput?parseFloat(scoreInput.value):NaN;
+    return{name,score:isNaN(score)?0:score};
+  }).filter(sub=>sub.name);
+}
 // ── Per-device School Level override ─────────────────
 // Lets the admin instantly switch institution type on
 // THIS device (localStorage), without editing config.json
@@ -822,6 +879,7 @@ function setLevelOverride(val){
   populateClassDropdowns();
   if($('rqItemsList'))clearReqForm();
   if($('reqStuBody'))rReq();
+  if($('nSubjectsList'))renderSubjectRows('nSubjectsList',getSubjectTemplate().map(name=>({name,score:''})));
 }
 function initLevelOverrideUI(){
   const sel=$('levelOverride');if(!sel)return;
@@ -945,6 +1003,7 @@ function doLogin(){
     renderComms();tick();setInterval(tick,1000);
     loadStu();loadWks();loadReq();restoreMsgLog();
     if($('rqItemsList')&&!$('rqItemsList').children.length)renderReqItemRows(getReqTemplate());
+    if($('nSubjectsList')&&!$('nSubjectsList').children.length)renderSubjectRows('nSubjectsList',getSubjectTemplate().map(name=>({name,score:''})));
   } else {
     tries++;
     const rem=MAX-tries;
@@ -1109,16 +1168,20 @@ async function fetchGviz(sheet){
 async function loadStu(){
   try{
     const rows=await fetchGviz('students');
-    stu=rows.filter(r=>r[1]&&r[1]!=='NAME'&&r[1]!=='Name').map(r=>({
-      id:String(r[0]||'').trim(),name:String(r[1]||'').trim(),cls:String(r[2]||'').trim(),
-      parent:String(r[3]||'').trim(),phone:String(r[4]||'').trim(),
-      fee:parseFloat(r[5])||0,paid:parseFloat(r[6])||0,
-      eng:parseFloat(r[7])||0,math:parseFloat(r[8])||0,
-      sci:parseFloat(r[9])||0,sst:parseFloat(r[10])||0,
-      pin:String(r[11]||'').trim(),cont:r[12]||'SMS',
-      bal:(parseFloat(r[5])||0)-(parseFloat(r[6])||0),
-      status:String(r[14]||'Active').trim(),
-    }));
+    stu=rows.filter(r=>r[1]&&r[1]!=='NAME'&&r[1]!=='Name').map(r=>{
+      let subjects=[];
+      try{subjects=JSON.parse(r[7]||'[]');}catch(e){subjects=[];}
+      subjects=(subjects||[]).map(sub=>({name:String((sub&&sub.name)||'').trim(),score:Number(sub&&sub.score)||0})).filter(sub=>sub.name);
+      return{
+        id:String(r[0]||'').trim(),name:String(r[1]||'').trim(),cls:String(r[2]||'').trim(),
+        parent:String(r[3]||'').trim(),phone:String(r[4]||'').trim(),
+        fee:parseFloat(r[5])||0,paid:parseFloat(r[6])||0,
+        subjects:subjects,
+        pin:String(r[8]||'').trim(),cont:r[9]||'SMS',
+        bal:(parseFloat(r[5])||0)-(parseFloat(r[6])||0),
+        status:String(r[11]||'Active').trim(),
+      };
+    });
     rStuList();rBal();updStats();
   }catch(e){toast('⚠️ Could not load students',false);}
 }
@@ -1200,7 +1263,7 @@ function selectStu(id){
   selectedStuId=id;
   rStuList(); // re-render list to show selection
   const s=stu.find(x=>x.id===id);if(!s)return;
-  const avg=Math.round((s.eng+s.math+s.sci+s.sst)/4);
+  const avg=subjAvg(s);
   const grade=gradeFor(avg);
   $('stuDetailPanel').innerHTML=`
     <div class="detail-header">
@@ -1235,9 +1298,9 @@ function selectStu(id){
       <div class="detail-section">
         <div class="detail-section-title">Academic Results</div>
         <div class="scores-grid">
-          ${[{n:'English',v:s.eng},{n:'Math',v:s.math},{n:'Science',v:s.sci},{n:'SST',v:s.sst}].map(sub=>{
-            const g=gradeFor(sub.v);
-            return `<div class="score-box"><div class="score-sub">${sub.n}</div><div class="score-val" style="color:${gradeColor(g)}">${sub.v||'—'}</div><span class="score-grade" style="background:${gradeColor(g)}22;color:${gradeColor(g)}">${sub.v?g:'—'}</span></div>`;
+          ${!s.subjects||!s.subjects.length?'<p style="color:var(--text-dim);font-size:0.78rem;margin:0">No subjects recorded yet.</p>':s.subjects.map(sub=>{
+            const g=gradeFor(sub.score);
+            return `<div class="score-box"><div class="score-sub">${sub.name}</div><div class="score-val" style="color:${gradeColor(g)}">${sub.score||'—'}</div><span class="score-grade" style="background:${gradeColor(g)}22;color:${gradeColor(g)}">${sub.score?g:'—'}</span></div>`;
           }).join('')}
         </div>
         <div style="background:var(--primary);color:#fff;border-radius:9px;padding:10px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center">
@@ -1283,15 +1346,17 @@ function editStu(id){
       <div class="ff"><label>Term Fee</label><input type="number" id="eF" value="${s.fee}"/></div>
       <div class="ff"><label>Paid</label><input type="number" id="ePd" value="${s.paid}"/></div>
       <div class="ff"><label>PIN</label><input type="text" id="ePi" value="${s.pin}"/></div>
-      <div class="ff"><label>English</label><input type="number" id="eEn" value="${s.eng}"/></div>
-      <div class="ff"><label>Math</label><input type="number" id="eMa" value="${s.math}"/></div>
-      <div class="ff"><label>Science</label><input type="number" id="eSc" value="${s.sci}"/></div>
-      <div class="ff"><label>SST</label><input type="number" id="eSS" value="${s.sst}"/></div>
+    </div>
+    <div style="margin-top:12px">
+      <label style="font-size:0.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.03em">Subjects & Scores</label>
+      <div id="eSubjectsList" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+      <button type="button" class="btn boutline" style="margin-top:8px" onclick="addSubjectRow('eSubjectsList')">+ Add Subject</button>
     </div>
     <div style="display:flex;gap:7px;justify-content:flex-end;margin-top:13px">
       <button class="btn boutline" onclick="closeMo('editMo')">Cancel</button>
       <button class="btn bdark" onclick="saveEdit('${id}')">Save Changes</button>
     </div>`;
+  renderSubjectRows('eSubjectsList', s.subjects&&s.subjects.length?s.subjects:getSubjectTemplate().map(name=>({name,score:''})));
   $('editMo').classList.add('open');
 }
 
@@ -1299,12 +1364,11 @@ function saveEdit(id){
   const s=stu.find(x=>x.id===id);if(!s)return;
   s.name=$('eN').value;s.cls=$('eC').value;s.parent=$('eP').value;s.phone=$('ePh').value;
   s.fee=parseFloat($('eF').value)||0;s.paid=parseFloat($('ePd').value)||0;
-  s.pin=$('ePi').value;s.eng=parseFloat($('eEn').value)||0;s.math=parseFloat($('eMa').value)||0;
-  s.sci=parseFloat($('eSc').value)||0;s.sst=parseFloat($('eSS').value)||0;s.bal=s.fee-s.paid;
+  s.pin=$('ePi').value;s.subjects=collectSubjects('eSubjectsList');s.bal=s.fee-s.paid;
   closeMo('editMo');rStuList();rBal();updStats();
   if(selectedStuId===id)selectStu(id);
   toast(`✅ ${s.name} updated!`);
-  fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin})}).catch(()=>{});
+  fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,subjects:s.subjects,pin:s.pin})}).catch(()=>{});
 }
 
 function delStu(id){
@@ -1333,14 +1397,17 @@ async function addStudent(){
   const name=$('nName').value.trim();
   if(!name){toast('⚠️ Please enter student name',false);return;}
   const id=$('nId').value.trim()||'STU-'+String(stu.length+1).padStart(3,'0');
-  const s={id,name,cls:$('nClass').value,parent:$('nParent').value,phone:$('nPhone').value,cont:$('nCont').value,fee:parseFloat($('nFee').value)||0,paid:parseFloat($('nPaid').value)||0,pin:$('nPin').value||'0000',eng:parseFloat($('nEng').value)||0,math:parseFloat($('nMath').value)||0,sci:parseFloat($('nSci').value)||0,sst:parseFloat($('nSST').value)||0,status:'Active'};
+  const s={id,name,cls:$('nClass').value,parent:$('nParent').value,phone:$('nPhone').value,cont:$('nCont').value,fee:parseFloat($('nFee').value)||0,paid:parseFloat($('nPaid').value)||0,pin:$('nPin').value||'0000',subjects:collectSubjects('nSubjectsList'),status:'Active'};
   s.bal=s.fee-s.paid;
   stu.push(s);rStuList();updStats();clearStuForm();
   toast(`✅ ${name} added!`);showPage('students',null);
-  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'addStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,english:s.eng,math:s.math,science:s.sci,sst:s.sst,pin:s.pin,contactType:s.cont})});}
+  try{await fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'addStudent',id:s.id,name:s.name,class:s.cls,parent:s.parent,phone:s.phone,termFee:s.fee,paid:s.paid,subjects:s.subjects,pin:s.pin,contactType:s.cont})});}
   catch(e){console.error('addStudent sync failed:',e);toast('⚠️ '+name+' saved locally ('+(e.message||'network error')+') — will sync when connected',false);}
 }
-function clearStuForm(){['nId','nName','nParent','nPhone','nFee','nPaid','nPin','nEng','nMath','nSci','nSST'].forEach(id=>$(id).value='');}
+function clearStuForm(){
+  ['nId','nName','nParent','nPhone','nFee','nPaid','nPin'].forEach(id=>$(id).value='');
+  renderSubjectRows('nSubjectsList',getSubjectTemplate().map(name=>({name,score:''})));
+}
 
 // ═══════════════════════════════════════════════════
 // WORKERS — MASTER-DETAIL
