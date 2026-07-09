@@ -437,12 +437,12 @@ table tbody tr:hover{background:var(--bg);}
             <table>
               <thead>
                 <tr>
-                  <th>Student</th><th>Class</th><th>Subjects</th>
+                  <th>Student</th><th>Class</th><th>English</th><th>Math</th><th>Science</th><th>SST</th>
                   <th>Average</th><th>Grade</th><th>Fee Status</th>
                 </tr>
               </thead>
               <tbody id="reportsBody">
-                <tr class="loadingRow"><td colspan="6">Loading…</td></tr>
+                <tr class="loadingRow"><td colspan="9">Loading…</td></tr>
               </tbody>
             </table>
           </div>
@@ -537,10 +537,10 @@ table tbody tr:hover{background:var(--bg);}
           <div class="tableWrap">
             <table>
               <thead>
-                <tr><th>Class</th><th>Item 1</th><th>Item 2</th><th>Item 3</th><th>Item 4</th><th>Item 5</th><th>Item 6</th></tr>
+                <tr><th>Class</th><th>Items</th></tr>
               </thead>
               <tbody id="requirementsListBody">
-                <tr class="loadingRow"><td colspan="7">Loading…</td></tr>
+                <tr class="loadingRow"><td colspan="2">Loading…</td></tr>
               </tbody>
             </table>
           </div>
@@ -729,13 +729,6 @@ function gradeFor(avg){
   if(avg >= 60) return "B";
   if(avg >= 40) return "C";
   return "D";
-}
-
-// Average across however many subjects a student actually
-// has — no hardcoded "/4". Works for 2 subjects or 10.
-function subjAvg(s){
-  if(!s.subjects||!s.subjects.length)return 0;
-  return Math.round(s.subjects.reduce((a,x)=>a+(Number(x.score)||0),0)/s.subjects.length);
 }
 
 function todayStr(){
@@ -1063,27 +1056,23 @@ async function loadAllData(){
     const [studentsRaw, workersRaw, stafflogRaw, paymentsRaw, expensesRaw, requirementsRaw, stuItemsRaw, salaryRaw] = results;
 
     // STUDENTS
-    DATA.students = studentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => {
-      let subjects = [];
-      try { subjects = JSON.parse(r[7] || "[]"); } catch(e) { subjects = []; }
-      subjects = (subjects || []).map(sub => ({
-        name: String((sub && sub.name) || "").trim(),
-        score: Number(sub && sub.score) || 0
-      })).filter(sub => sub.name);
-      return {
-        id: String(r[0] || "").trim(),
-        name: String(r[1] || "").trim(),
-        class: String(r[2] || "").trim(),
-        parent: String(r[3] || "").trim(),
-        phone: String(r[4] || "").trim(),
-        termFee: parseFloat(r[5]) || 0,
-        paid: parseFloat(r[6]) || 0,
-        subjects: subjects,
-        pin: String(r[8] || "").trim(),
-        contact: String(r[9] || "").trim(),
-        status: String(r[11] || "").trim()
-      };
-    });
+    DATA.students = studentsRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => ({
+      id: String(r[0] || "").trim(),
+      name: String(r[1] || "").trim(),
+      class: String(r[2] || "").trim(),
+      parent: String(r[3] || "").trim(),
+      phone: String(r[4] || "").trim(),
+      termFee: parseFloat(r[5]) || 0,
+      paid: parseFloat(r[6]) || 0,
+      english: parseFloat(r[7]) || 0,
+      math: parseFloat(r[8]) || 0,
+      science: parseFloat(r[9]) || 0,
+      sst: parseFloat(r[10]) || 0,
+      pin: String(r[11] || "").trim(),
+      contact: String(r[12] || "").trim(),
+      itemsBrought: parseFloat(r[13]) || 0,
+      status: String(r[14] || "").trim()
+    }));
 
     // WORKERS
     DATA.workers = workersRaw.filter(r => !isHeaderRow(r) && r[0] !== "" && r[1] !== "").map(r => ({
@@ -1140,19 +1129,25 @@ async function loadAllData(){
     DATA.expenses.forEach(e => { if(e.date === today) spentToday += e.amount; });
     DATA.expensesToday = spentToday;
 
-    // REQUIREMENTS -- columns: CLASS, ITEM1-6
-    DATA.requirements = requirementsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
-      class: String(r[0] || "").trim(),
-      items: [r[1], r[2], r[3], r[4], r[5], r[6]]
-        .map(v => String(v || "").trim())
-        .filter(v => v !== "")
-    }));
+    // REQUIREMENTS -- columns: Class, ItemsJSON
+    DATA.requirements = requirementsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => {
+      let items = [];
+      try { items = JSON.parse(r[1] || "[]"); } catch(e) { items = []; }
+      return {
+        class: String(r[0] || "").trim(),
+        items: (items || []).map(v => String(v || "").trim()).filter(v => v !== "")
+      };
+    });
 
-    // STUDENT ITEMS -- columns: StudentID, Item1-6 (TRUE/FALSE)
-    DATA.stuItems = stuItemsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
-      id: String(r[0] || "").trim(),
-      brought: [r[1],r[2],r[3],r[4],r[5],r[6]].map(v => String(v||"").trim().toUpperCase() === "TRUE")
-    }));
+    // STUDENT ITEMS -- columns: StudentID, BroughtJSON
+    DATA.stuItems = stuItemsRaw.filter(r => !isHeaderRow(r) && r[0] !== "").map(r => {
+      let brought = [];
+      try { brought = JSON.parse(r[1] || "[]"); } catch(e) { brought = []; }
+      return {
+        id: String(r[0] || "").trim(),
+        brought: (brought || []).map(v => !!v)
+      };
+    });
 
     // SALARY APPROVALS -- columns: PaymentID, WorkerID, WorkerName, Role, Amount, Period, Method, RecordedBy, Date, Time, Status, ApprovedBy, ApprovalDate
     DATA.salaryApprovals = (salaryRaw||[]).filter(r => !isHeaderRow(r) && r[0] !== "").map(r => ({
@@ -1367,20 +1362,17 @@ function renderSubjectPerfChart(){
 function renderReportsTable(){
   const tbody = $("reportsBody");
   if(DATA.students.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">No student data available</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">No student data available</td></tr>';
     return;
   }
   tbody.innerHTML = DATA.students.map(s => {
-    const avg = subjAvg(s);
+    const avg = Math.round((s.english + s.math + s.science + s.sst) / 4);
     const grade = gradeFor(avg);
     const balance = s.termFee - s.paid;
     let feeStatus, feeClass;
     if(balance <= 0){ feeStatus = "Paid"; feeClass = "green"; }
     else if(s.paid > 0){ feeStatus = "Partial"; feeClass = "orange"; }
     else { feeStatus = "Owing"; feeClass = "red"; }
-    const subjectsStr = (s.subjects && s.subjects.length)
-      ? s.subjects.map(sub => `${sub.name}: ${sub.score}`).join(", ")
-      : "—";
 
     return `
       <tr onclick="openStudentModal('${s.id.replace(/'/g, "\\'")}')">
@@ -1394,7 +1386,10 @@ function renderReportsTable(){
           </div>
         </td>
         <td>${s.class}</td>
-        <td style="font-size:.8rem;color:#555">${subjectsStr}</td>
+        <td>${s.english}</td>
+        <td>${s.math}</td>
+        <td>${s.science}</td>
+        <td>${s.sst}</td>
         <td><b>${avg}%</b></td>
         <td><span class="badge ${grade === 'A' ? 'green' : grade === 'B' ? 'blue' : grade === 'C' ? 'orange' : 'red'}">${grade}</span></td>
         <td><span class="badge ${feeClass}">${feeStatus}</span></td>
@@ -1421,7 +1416,7 @@ function openStudentModal(id){
   $("modalFeeBadge").textContent = feeStatus;
   $("modalFeeBadge").className = "badge " + feeClass;
 
-  const avg = subjAvg(s);
+  const avg = Math.round((s.english + s.math + s.science + s.sst) / 4);
   const grade = gradeFor(avg);
   $("modalGradeBadge").textContent = "Grade " + grade;
   $("modalGradeBadge").className = "badge " + (grade === 'A' ? 'green' : grade === 'B' ? 'blue' : grade === 'C' ? 'orange' : 'red');
@@ -1430,13 +1425,18 @@ function openStudentModal(id){
   $("modalPaid").textContent = fmtMoney(s.paid);
   $("modalBalance").textContent = fmtMoney(Math.max(balance,0));
 
-  const subjects = (s.subjects && s.subjects.length) ? s.subjects.map(sub => ({label: sub.name, score: sub.score})) : [];
-  $("modalResultsGrid").innerHTML = subjects.length ? subjects.map(sub => `
+  const subjects = [
+    {label:'English', score:s.english},
+    {label:'Math', score:s.math},
+    {label:'Science', score:s.science},
+    {label:'SST', score:s.sst}
+  ];
+  $("modalResultsGrid").innerHTML = subjects.map(sub => `
     <div class="resultBox">
       <span class="rsub">${sub.label}</span>
       <span class="rscore">${sub.score}% (${gradeFor(sub.score)})</span>
     </div>
-  `).join("") : '<div class="empty" style="padding:14px;">No subjects recorded yet</div>';
+  `).join("");
 
   $("modalAverage").textContent = avg + "% (" + grade + ")";
 
@@ -1532,34 +1532,28 @@ function renderAnalysisPage(){
     return;
   }
 
-  // compute averages (works for any number of subjects per student)
+  // compute averages
   const withAvg = stu.map(s => ({
     ...s,
-    avg: subjAvg(s)
+    avg: (s.english + s.math + s.science + s.sst) / 4
   }));
 
   // Best student
   const best = withAvg.reduce((a,b) => b.avg > a.avg ? b : a);
 
-  // Subject averages — built from whatever subjects actually exist
-  // across all students (union), not a fixed list. This is what
-  // makes it work for a school with mixed primary/secondary classes,
-  // or any institution type: each subject is only averaged across
-  // the students who actually have that subject.
-  const subjectMap = {};
-  stu.forEach(s => {
-    (s.subjects||[]).forEach(sub => {
-      if(!subjectMap[sub.name]) subjectMap[sub.name] = {total:0, count:0};
-      subjectMap[sub.name].total += (Number(sub.score)||0);
-      subjectMap[sub.name].count += 1;
-    });
-  });
-  const subjAvgs = Object.keys(subjectMap).map(name => ({
-    label: name,
-    avg: subjectMap[name].total / subjectMap[name].count
+  // Subject averages
+  const subjects = [
+    {key:'english', label:'English'},
+    {key:'math', label:'Math'},
+    {key:'science', label:'Science'},
+    {key:'sst', label:'SST'}
+  ];
+  const subjAvgs = subjects.map(sub => ({
+    label: sub.label,
+    avg: withAvg.reduce((acc,s) => acc + s[sub.key], 0) / withAvg.length
   }));
-  const bestSubject = subjAvgs.length ? subjAvgs.reduce((a,b) => b.avg > a.avg ? b : a) : {label:'—', avg:0};
-  const weakestSubject = subjAvgs.length ? subjAvgs.reduce((a,b) => b.avg < a.avg ? b : a) : {label:'—', avg:0};
+  const bestSubject = subjAvgs.reduce((a,b) => b.avg > a.avg ? b : a);
+  const weakestSubject = subjAvgs.reduce((a,b) => b.avg < a.avg ? b : a);
 
   // Pass rate (avg >= 40 considered pass per grading: D is lowest pass)
   const passCount = withAvg.filter(s => s.avg >= 40).length;
@@ -1618,17 +1612,12 @@ function renderAnalysisPage(){
   ];
   renderBarChart("gradeDistChart", gradeItems, "green");
 
-  // Subject pass rates (>=40) — computed per subject, only across
-  // the students who actually take that subject
-  const subjPassItems = Object.keys(subjectMap).map(name => {
-    let passers = 0, total = 0;
-    stu.forEach(s => {
-      const sub = (s.subjects||[]).find(x => x.name === name);
-      if(sub){ total++; if((Number(sub.score)||0) >= 40) passers++; }
-    });
-    const rate = total ? Math.round((passers/total)*100) : 0;
-    return {label: name, value: rate, display: rate + "%"};
-  }).sort((a,b) => b.value - a.value);
+  // Subject pass rates (>=40)
+  const subjPassItems = subjects.map(sub => {
+    const passers = withAvg.filter(s => s[sub.key] >= 40).length;
+    const rate = Math.round((passers / withAvg.length) * 100);
+    return {label: sub.label, value: rate, display: rate + "%"};
+  });
   renderBarChart("subjectPassChart", subjPassItems, "orange");
 
   // School summary table
@@ -1771,25 +1760,30 @@ function renderActivityLog(){
 }
 
 /* ===================== REQUIREMENTS PAGE ===================== */
-function gradeNum(cls){
-  const m = String(cls || "").match(/\d+/);
-  return m ? m[0] : "";
+// Normalizes a class string for requirements matching, tolerant
+// of punctuation inconsistencies (e.g. "P.4B" and "P4.B" are
+// treated as the same class) — same fix applied in admin.html.
+function reqBaseClass(cls){
+  const norm=String(cls||"").trim().toUpperCase().replace(/[.\s]/g,"");
+  const m=norm.match(/^(.*\d)[A-Z]$/);
+  return m?m[1]:norm;
 }
 function getClassRequirements(className){
-  const g = gradeNum(className);
-  if(!g) return undefined;
-  return DATA.requirements.find(r => gradeNum(r.class) === g);
+  const base = reqBaseClass(className);
+  if(!base) return undefined;
+  return DATA.requirements.find(r => reqBaseClass(r.class) === base)
+      || DATA.requirements.find(r => String(r.class||"").trim().toUpperCase() === String(className||"").trim().toUpperCase());
 }
 
 function renderRequirementsList(){
   const tbody = $("requirementsListBody");
   if(DATA.requirements.length === 0){
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">No requirements data available</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="2" class="empty">No requirements data available</td></tr>';
     return;
   }
   tbody.innerHTML = DATA.requirements.map(r => {
-    const cells = [0,1,2,3,4,5].map(i => `<td>${r.items[i] || '—'}</td>`).join("");
-    return `<tr><td><b>${r.class}</b></td>${cells}</tr>`;
+    const itemsStr = r.items.length ? r.items.join(", ") : "—";
+    return `<tr><td><b>${r.class}</b></td><td>${itemsStr}</td></tr>`;
   }).join("");
 }
 
