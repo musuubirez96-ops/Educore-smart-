@@ -1670,11 +1670,29 @@ function renderWorkers(){
   if(workers.length === 0){ grid.innerHTML = '<div class="empty">No workers found</div>'; return; }
 
   grid.innerHTML = workers.map(w => {
-    // Find latest pending salary record for this worker
+    // ALL pending payments for this worker, not just the latest one.
+    // A weekly-paid worker can build up several unapproved weeks if
+    // the principal hasn't checked in a while — each one needs its
+    // own visible row and its own Approve action, so none get
+    // silently hidden behind a single "latest" button.
     const pending = (DATA.salaryApprovals||[]).filter(r => r.workerId === w.id && r.status === 'Pending');
-    const latestPending = pending.length ? pending[pending.length-1] : null;
     const approvedRecs = (DATA.salaryApprovals||[]).filter(r => r.workerId === w.id && r.status === 'Approved');
     const lastApproved = approvedRecs.length ? approvedRecs[approvedRecs.length-1] : null;
+
+    const pendingHtml = pending.length
+      ? pending.map(rec => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #eee">
+            <div>
+              <div style="font-weight:600;font-size:0.85rem">UGX ${fmtMoney(rec.amount)}</div>
+              <div style="font-size:0.7rem;color:var(--text-dim)">${rec.date || ''}</div>
+            </div>
+            <button class="approveBtn pending" style="width:auto;margin:0;padding:7px 16px;font-size:0.78rem" onclick="approveWorker('${rec.paymentId.replace(/'/g,"\\'")}','${w.name.replace(/'/g,"\\'")}')">✅ Approve</button>
+          </div>
+        `).join("")
+      : lastApproved
+        ? `<div style="font-size:0.75rem;color:var(--text-dim);padding:8px 0">No pending payments · Last approved ${lastApproved.approvalDate} by ${lastApproved.approvedBy}</div>`
+        : `<div style="font-size:0.75rem;color:var(--text-dim);padding:8px 0">No pending payment</div>`;
+
     return `
       <div class="workerCard">
         <div class="wtop">
@@ -1682,13 +1700,8 @@ function renderWorkers(){
           <span class="badge blue">${w.category || 'General'}</span>
         </div>
         <div class="wamt">${fmtMoney(w.amount)}</div>
-        <div class="wfreq">Paid ${w.payType || 'Monthly'}</div>
-        ${latestPending
-          ? `<button class="approveBtn pending" onclick="approveWorker('${latestPending.paymentId.replace(/'/g,"\\'")}','${w.name.replace(/'/g,"\\'")}')">✅ Approve Payment (UGX ${fmtMoney(latestPending.amount)})</button>`
-          : lastApproved
-            ? `<button class="approveBtn approved" disabled>✅ Last: Approved ${lastApproved.approvalDate} by ${lastApproved.approvedBy}</button>`
-            : `<div style="font-size:0.75rem;color:var(--text-dim);padding:8px 0">No pending payment</div>`
-        }
+        <div class="wfreq">Paid ${w.payType || 'Monthly'}${pending.length > 1 ? ` · <span style="color:var(--orange);font-weight:600">${pending.length} pending</span>` : ''}</div>
+        ${pendingHtml}
       </div>
     `;
   }).join("");
