@@ -400,7 +400,7 @@ tbody tr:hover{background:#fafafa;}
       <!-- PAYROLL -->
       <div id="page-payroll" class="page">
         <div style="background:var(--accent-pale);border:1.5px solid var(--accent);border-radius:11px;padding:12px 16px;margin-bottom:16px;font-size:0.78rem;color:var(--orange);line-height:1.5">
-          <strong>ℹ️ Principal Approval Required</strong><br>Worker payments must be approved by the Principal first. Go to Principal dashboard to approve, then return here to pay.
+          <strong>ℹ️ Principal Sign-off</strong><br>You can pay any active worker directly. Each payment is then sent to the Principal for sign-off — check the Principal dashboard to confirm it's been reviewed.
         </div>
         <div class="sh">
           <span class="stitle">Workers Payroll</span>
@@ -1073,14 +1073,13 @@ function rWks(){
 
 function renderWkCards(list){
   const grid=document.getElementById('wGrid');
-  const approvals=getApprovals();
   if(!list.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text-dim)">No workers found.</div>';return;}
   const active=list.filter(w=>w.status!=='Quit'&&w.status!=='Frozen');
   if(!active.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text-dim)">No active workers found.</div>';return;}
   grid.innerHTML=active.map(w=>{
     const ps=w.termPaid>=w.amt&&w.amt>0?'Paid':w.termPaid>0?'Partial':'Not Paid';
     const pc=w.termPaid>=w.amt&&w.amt>0?'wpaid':w.termPaid>0?'wpart':'wnpay';
-    const approved=approvals[w.id];
+    const pendingCount=salaryApprovals.filter(r=>r.workerId===w.id&&r.status==='Pending').length;
     return `<div class="wc">
       <div class="wt">
         <div class="wav" style="background:${col(w.name)}">${ini(w.name)}</div>
@@ -1090,12 +1089,10 @@ function renderWkCards(list){
       <div><span class="wstatus ${pc}">${ps}</span></div>
       <div class="wpay">UGX ${fm(w.amt)}</div>
       <div class="wfreq">Per ${w.payType}</div>
+      ${pendingCount>0?`<div style="font-size:0.68rem;color:var(--orange);margin-bottom:6px">⏳ ${pendingCount} payment${pendingCount>1?'s':''} awaiting Principal sign-off</div>`:''}
       <div class="wbs">
-        ${approved?
-          `<button class="wb wfull" onclick="payWk('${w.id}','full')">💰 Full Pay</button>
-           <button class="wb wadv" onclick="payWk('${w.id}','advance')">📤 Advance</button>`:
-          `<button class="wb wpend" onclick="toast('Principal has not approved this payment yet. Please ask the Principal to approve first.',false)" style="width:100%;background:var(--red-pale);color:var(--red)">⏳ Awaiting Principal Approval</button>`
-        }
+        <button class="wb wfull" onclick="payWk('${w.id}','full')">💰 Full Pay</button>
+        <button class="wb wadv" onclick="payWk('${w.id}','advance')">📤 Advance</button>
       </div>
     </div>`;
   }).join('');
@@ -1103,10 +1100,8 @@ function renderWkCards(list){
 
 function payWk(id,type){
   const w=wks.find(x=>x.id===id);if(!w)return;
-  const approvals=getApprovals();
-  if(!approvals[w.id]){toast('⚠️ Ask the Principal to approve this payment first.',false);return;}
   if(type==='full'){
-    if(!confirm(`Pay full salary of UGX ${fm(w.amt)} to ${w.name}?\n\nThis payment has been approved by the Principal.`))return;
+    if(!confirm(`Pay full salary of UGX ${fm(w.amt)} to ${w.name}?\n\nThis payment will be sent to the Principal for sign-off.`))return;
     w.termPaid=w.amt;
     exps.unshift({desc:`${w.name} – ${w.payType} Salary`,cat:'Payroll',amt:w.amt,date:nd(),approved:'Principal',by:cu});
     rExps();rWks();
