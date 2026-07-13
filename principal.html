@@ -879,6 +879,11 @@ function signIn(){
   currentUser = user;
   msg.className = "loginMsg success";
   msg.textContent = "Welcome back, " + user.name + "!";
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+  fetch(CFG.scriptUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({
+    action:'logStaff', name:user.name, role:'Principal', activityType:'Logged in', date:todayStr(), time:timeStr
+  })}).catch(()=>{});
   setTimeout(()=>{ enterApp(); }, 400);
 }
 
