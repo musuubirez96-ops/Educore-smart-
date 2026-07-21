@@ -482,8 +482,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <!-- ═══ STUDENTS ═══ -->
       <div id="page-students" class="page active">
         <div style="text-align:right;margin-bottom:8px">
-          <button class="btn boutline" onclick="exportStudentsCSV()" style="font-size:0.72rem;padding:5px 11px">
-            📥 ${hasFeature('exportCSV')?'Export Students CSV':'🔒 Pro: Export CSV'}
+          <button class="btn boutline" onclick="exportStudentsCSV()" style="font-size:0.72rem;padding:5px 11px" id="exportCSVBtn">
+            📥 Export Students CSV
           </button>
         </div>
         <div class="srow" id="stuStats">
