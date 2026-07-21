@@ -421,8 +421,8 @@ tbody tr:hover{background:#fafafa;}
       <div id="page-history" class="page">
         <div class="sh">
           <span class="stitle">All Payment Records</span>
-          <button class="btn boutline" onclick="exportPaymentsCSV()" style="font-size:0.72rem;padding:5px 11px">
-            📥 ${hasFeature('exportCSV')?'Export CSV':'🔒 Pro: Export CSV'}
+          <button class="btn boutline" onclick="exportPaymentsCSV()" style="font-size:0.72rem;padding:5px 11px" id="exportPayCSVBtn">
+            📥 Export CSV
           </button>
         </div>
         <div class="tw"><div class="tw-scroll">
